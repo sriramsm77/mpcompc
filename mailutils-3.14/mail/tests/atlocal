@@ -1,0 +1,12 @@
+# mail/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
+# Configurable variable values for Mailutils test suite.
+# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+
+PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/testsuite:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/mail/tests:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/mail:$top_srcdir:$srcdir:$PATH
+testsuitedir=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/testsuite
+MAILER=sendmail:///home/ubuntu/mailutils/mpcompc/mailutils-3.14/testsuite/mockmail
+MALLOC_CHECK_=2
+export MALLOC_CHECK_
+catmbox() {
+    sed -e /^X-IMAPbase:/d -e /^X-UID:/d $1
+}

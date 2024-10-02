@@ -1,0 +1,7 @@
+# mda/lmtpd/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
+# Configurable variable values for Mailutils test suite.
+# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+
+PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/mda/lmtpd/tests/..:$PATH
+MU_DEFAULT_SCHEME=mbox
+. $abs_top_srcdir/mda/tests/mda.sh

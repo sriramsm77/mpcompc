@@ -1,0 +1,5 @@
+# sieve/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
+# Configurable variable values for Mailutils test suite.
+# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+
+PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/sieve/tests:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/sieve:$top_srcdir:$srcdir:$PATH

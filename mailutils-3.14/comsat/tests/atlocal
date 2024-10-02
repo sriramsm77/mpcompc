@@ -1,0 +1,9 @@
+# comsat/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
+# Configurable variable values for Mailutils test suite.
+# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+
+PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/comsat/tests:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/comsat:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/testsuite:$top_srcdir:$srcdir:$PATH
+spooldir=$abs_top_srcdir/testsuite/spool/
+MH_SUPPORT=yes
+MAILDIR_SUPPORT=yes
+  
