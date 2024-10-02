@@ -1,0 +1,273 @@
+Source: mailutils
+Section: mail
+Priority: optional
+Maintainer: Jordi Mallach <jordi@debian.org>
+Build-Depends: bison,
+               debhelper-compat (= 13),
+               dh-python,
+               default-libmysqlclient-dev,
+               dejagnu,
+               dpkg-dev (>= 1.16.1~),
+               flex,
+               gawk,
+               gettext,
+               guile-3.0-dev,
+               help2man,
+               libfribidi-dev,
+               libgnutls28-dev,
+               libgsasl7-dev (>= 0.2.5),
+               libkrb5-dev,
+               libdb-dev,
+               libgdbm-dev,
+               libkyotocabinet-dev,
+               libldap2-dev,
+               liblocale-gettext-perl,
+               libltdl-dev,
+               libpam0g-dev,
+               libpq-dev,
+               libreadline-dev,
+               libunistring-dev,
+               libwrap0-dev,
+               python3-dev,
+               texinfo,
+               zlib1g-dev
+Standards-Version: 4.6.0
+Vcs-Git: https://salsa.debian.org/debian/mailutils.git
+Vcs-Browser: https://salsa.debian.org/debian/mailutils
+Homepage: https://www.gnu.org/software/mailutils/
+Rules-Requires-Root: no
+
+Package: libmailutils8
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: mailutils-common (>= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Multi-Arch: same
+Description: GNU Mail abstraction library
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This is GNU's Mail abstraction library.  This library allows programs to
+ hook into a single library for many different types of mail backends.
+ The following backend stores are currently provided: mbox, mh, maildir,
+ dotmail, pop3, imap4.
+
+Package: libmu-dbm8
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: mailutils-common (>= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Multi-Arch: same
+Description: GNU Mail abstraction library -- dbm support
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This is GNU's Mail abstraction library dbm support component. This library
+ allows programs to hook into a single library for many different types of
+ mail backends. The following backend stores are currently provided: mbox,
+ mh, maildir, dotmail, pop3, imap4.
+
+Package: libmailutils-dev
+Section: libdevel
+Architecture: any
+Depends: libmailutils8 (= ${binary:Version}),
+         libmu-dbm8 (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+         default-libmysqlclient-dev,
+         libgnutls28-dev,
+         libgsasl7-dev (>= 0.2.5),
+         libdb-dev,
+         libgdbm-dev,
+         libkyotocabinet-dev,
+         libldap2-dev,
+         libpam0g-dev
+Suggests: mailutils-doc
+Replaces: mailutils (<< 1:3.4-2)
+Breaks: mailutils (<< 1:3.4-2)
+Description: development files for GNU mailutils
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This package includes the development files for GNU mailutils and
+ GNU's Mail abstraction library.
+
+Package: mailutils
+Architecture: any
+Depends: mailutils-common (= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Recommends: default-mta | mail-transport-agent
+Breaks: bsd-mailx (<< 8.1.2-0.20071201cvs-1),
+        bsdmainutils (<< 8.0.6),
+        elm-me+ (<< 2.4pl25ME+99c-3),
+        heirloom-mailx (<< 12.3-3)
+Provides: mail-reader, mailx
+Suggests: mailutils-mh, mailutils-doc
+Description: GNU mailutils utilities for handling mail
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This package contains the GNU mailutils versions of dotlock, frm, from,
+ mail, messages, mimeview, movemail, readmsg and sieve. They are capable
+ of speaking POP3, IMAP, mbox, MH, Maildir and dotmail.
+ .
+  dotlock -- lock mail spool files.
+  frm -- display From: lines.
+  from -- display from and subject.
+  mail -- the standard /bin/mail interface, mail sender and reader.
+  messages -- count the number of messages in a mailbox.
+  mimeview -- display files, using mailcap mechanism.
+  movemail -- move messages across mailboxes.
+  readmsg -- extract selected messages from a mailbox.
+  sieve -- a mail filtering tool.
+
+Package: mailutils-mda
+Architecture: any
+Depends: mailutils-common (= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Breaks: libmailutils6 (<< 1:3.7-1~)
+Replaces: libmailutils6 (<< 1:3.7-1~)
+Description: GNU mailutils utilities for handling mail -- MDA
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This package contains the GNU mailutils' MDA tools: mda, putmail and lmtpd.
+ It is capable of speaking POP3, IMAP, mbox, MH, Maildir and dotmail.
+ .
+  mda -- the GNU local mail delivery agent.
+  putmail -- incorporate mail to a mailbox.
+  lmtpd -- local mail transfer protocol daemon.
+
+Package: mailutils-common
+Architecture: all
+Depends: ${misc:Depends}
+Multi-Arch: foreign
+Description: common files for GNU mailutils
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ These are common files for all mailutils packages, including locale
+ files.
+
+Package: mailutils-imap4d
+Section: net
+Architecture: any
+Conflicts: imap-server
+Provides: imap-server
+Depends: mailutils-common (= ${source:Version}),
+         netbase,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: mailutils-mda
+Description: GNU mailutils-based IMAP4 Daemon
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ The GNU mailutils IMAP4 daemon implements the Internet Message Access
+ Protocol, version 4rev1 as per RFC 2060. It supports the "Namespace"
+ capability and GSSAPI authentication mechanism. It is able to get the
+ authentication information from the system user database as well as from
+ a SQL database of arbitrary structure. The PAM framework can also be
+ used for authentication purposes. Additionally, mailutils imap4d supports
+ virtual mail domains and has TLS support via GNUtls. GNU mailutils supports
+ the mbox, MH, Maildir and dotmail mailbox formats.
+
+Package: mailutils-pop3d
+Section: net
+Architecture: any
+Provides: pop3-server
+Conflicts: pop3-server
+Depends: mailutils-common (= ${source:Version}),
+         netbase,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: mailutils-mda
+Description: GNU mailutils-based POP3 Daemon
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ The GNU mailutils POP3 daemon supports the basic POP3 protocol with the
+ CAPA, RESP-CODES, PIPELINING and UIDL extensions. It also supports APOP
+ authentication. The user credentials for APOP can be stored in a variety
+ of DBM formats. It is able to get the authentication information from
+ the system user database as well as from a SQL database of arbitrary
+ structure. The PAM framework can also be used for authentication
+ purposes. Additionally, mailutils pop3d supports virtual mail domains and
+ has TLS support via GNUtls. GNU mailutils supports the mbox, MH, Maildir
+ and dotmail mailbox formats.
+
+Package: mailutils-comsatd
+Section: net
+Architecture: any
+Conflicts: biff
+Depends: mailutils-common (= ${source:Version}),
+         netbase,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: GNU mailutils-based comsatd daemon
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ The GNU mailutils comsat daemon receives reports of incoming mail and
+ notifies users who wish to get this service.
+
+Package: mailutils-guile
+Architecture: any
+Depends: mailutils-common (= ${source:Version}),
+         libmailutils-dev,
+         guile-3.0 | guile,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: GNU mailutils Guile interpreter and modules
+ These are the GNU mailutils Guile utilities and modules. In particular,
+ the "guimb" mail processor and the sieve.scm sieve to Scheme translator
+ are included, along with several .scm modules for use with Guile.
+
+Package: mailutils-mh
+Architecture: any
+Provides: mail-reader
+Depends: mailutils-common (= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: mailutils, mh-e
+Description: GNU mailutils-based MH utilities
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ These are the GNU mailutils MH utilities. It is an implementation of MH, a
+ collection of small shell programs to read and handle mail in a very flexible
+ way.
+
+Package: python3-mailutils
+Section: python
+Architecture: any
+Depends: mailutils-common (= ${source:Version}),
+         ${misc:Depends},
+         ${python3:Depends},
+         ${shlibs:Depends}
+Provides: ${python3:Provides}
+Description: GNU Mail abstraction library (Python3 interface)
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This is the Python3 interface to the Mailutils library.
+
+Package: mailutils-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Multi-Arch: foreign
+Breaks: mailutils (<< 1:3.7-1~)
+Replaces: mailutils (<< 1:3.7-1~)
+Description: documentation files for GNU mailutils
+ GNU Mailutils is a rich and powerful protocol-independent mail framework.
+ It contains a series of useful mail libraries, clients, and servers.
+ .
+ This package contains the documentation for the mailutils utilities and
+ development API.

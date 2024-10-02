@@ -1,0 +1,162 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2007-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+m4_include([testsuite.inc])
+
+dnl ------------------------------------------------------------
+dnl mailbox for comsatd
+m4_pushdef([BIFF_MBOX],[`pwd`/mailbox])
+
+dnl ------------------------------------------------------------
+dnl comsatcmd
+m4_pushdef([comsatcmd],[comsatd --no-site-config --file ./biff.rc dnl
+ --set logging.syslog=no --test=output])
+
+dnl ------------------------------------------------------------
+dnl BIFFTEST(DESCR, KW, DATA, CMDLINE, [STDOUT = `'], [STDERR = `'])
+dnl
+dnl NOTE: The test is skipped if run as root, because .biffrc is
+dnl ignored for root (see open_rc() in action.c
+dnl
+m4_pushdef([BIFFTEST],[
+AT_SETUP([comsatd: $1])
+AT_KEYWORDS([comsatd $2])
+AT_CHECK([test -w / && AT_SKIP_TEST
+cwd=`pwd`
+$3
+],[0],[$4],[$5])
+AT_CLEANUP])
+
+AT_INIT
+
+AT_TESTED([comsatd])
+
+MUT_VERSION(comsatd)
+
+BIFFTEST([default commands],[comsatd00],
+[
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/teaparty.mbox, mailbox)
+comsatcmd $cwd/mailbox 0
+sed '1s/^Mail to .*/Mail to test user/' output
+],
+[Mail to test user
+---
+From: March Hare  <hare@wonder.land>
+Subject: Invitation
+---
+Have some wine
+
+
+---
+])
+
+BIFFTEST([non-zero qid],[comsatd01],
+[
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/teaparty.mbox, mailbox)
+comsatcmd $cwd/mailbox 9367
+sed '1s/^Mail to .*/Mail to test user/' output
+],
+[Mail to test user
+---
+From: Alice  <alice@wonder.land>
+Subject: Funny watch (was Re: Watch)
+---
+What a funny watch! It tells the day of the
+month, and doesn't tell what o'clock it is!
+
+
+---
+])
+
+BIFFTEST([maildir qid],[comsatd02],
+[
+test "$MAILDIR_SUPPORT" = yes || AT_SKIP_TEST
+AT_DATA([names],
+[cur/1284628225.M17468P3883Q0.Trurl:2,
+cur/1284628225.M19181P3883Q1.Trurl:2,S
+cur/1284628225.M20118P3883Q2.Trurl:2,
+cur/1284628225.M21284P3883Q3.Trurl:2,
+new/1284628225.M22502P3883Q4.Trurl
+])
+mbox2dir -i names -p -u mailbox $spooldir/mbox1
+comsatcmd maildir:$cwd/mailbox new/1284628225.M22502P3883Q4.Trurl
+sed '1s/^Mail to .*/Mail to test user/' output
+],
+[Mail to test user
+---
+From: Sergey Poznyakoff <gray@example.net>
+Subject: Empty MIME Parts
+---
+------- =_aaaaaaaaaa0
+Content-Type: text/plain; name="empty"; charset="us-ascii"
+Content-ID: <5082.1026510189.1@example.net>
+Content-Description: Empty part
+
+
+---
+])
+
+
+BIFFTEST([MH qid],[comsatd03],
+[
+test "$MH_SUPPORT" = yes || AT_SKIP_TEST
+mbox2dir -m -p -u mailbox $spooldir/teaparty.mbox
+comsatcmd mh:$cwd/mailbox 58
+sed '1s/^Mail to .*/Mail to test user/' output
+],
+[Mail to test user
+---
+From: March Hare  <hare@wonder.land>
+Subject: Request for a story (was Re: A guess)
+---
+Suppose we change the subject, I'm getting tired of this.
+I vote the young lady tells us a story.
+
+---
+])
+
+BIFFTEST([beep command],[comsatd04],
+[
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/mbox1, mailbox)
+cat > biff.rc <<EOT
+beep
+EOT
+chmod 600 biff.rc
+comsatcmd $cwd/mailbox 0
+cat output | tr '\a' A
+],
+[AA])
+
+BIFFTEST([exec command],[comsatd05],
+[cwd=`pwd`
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/teaparty.mbox, mailbox)
+AT_DATA([notifier],[#! /bin/sh
+echo "You have mail from $1, regarding $2"
+])
+chmod +x notifier
+cat > biff.rc <<EOT
+exec $cwd/notifier '\$H{from}' '\$H{Subject}'
+EOT
+chmod 600 biff.rc
+comsatcmd $cwd/mailbox 0
+cat output
+],
+[You have mail from March Hare  <hare@wonder.land>, regarding Invitation
+])
+
+m4_popdef([BIFFTEST])
+m4_popdef([comsatcmd])
+m4_popdef([BIFF_MBOX])

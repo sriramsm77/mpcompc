@@ -1,0 +1,93 @@
+# This file is part of GNU Mailutils                    -*- Autotest -*-
+# Copyright (C) 2018-2022 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+m4_include([testsuite.inc])
+
+m4_pushdef([MU_TEST_MAILBOX])
+m4_pushdef([MU_GUILE_OUTPUT_FILTER])
+
+# MU_GUILE_CHECK([CODE],
+#                     [STATUS=0],[STDOUT],[STDERR],[RUN-IF-FAIL],[RUN-IF-PASS])
+m4_define([MU_GUILE_CHECK],
+[AT_DATA([input.scm],[dnl
+(use-modules ((mailutils mailutils))
+             ((mailutils ancilla)))
+(mu-register-format "mbox")
+[$1]
+])
+m4_if(MU_TEST_MAILBOX,,,[MUT_MBCOPY($abs_top_srcdir/testsuite/MU_TEST_MAILBOX,mbox)])
+AT_CHECK([TZ=0 guile -q --no-auto-compile -L $LIBMU_SCM_ROOT -L $LIBMU_SCM_SRCDIR -s input.scm 2>err m4_if(MU_GUILE_OUTPUT_FILTER,,,[|MU_GUILE_OUTPUT_FILTER])
+rc=$?
+grep -v '^;;;' err>&2
+exit $rc],m4_shift($@))])
+
+m4_define([WITH_MAILBOX],
+[m4_pushdef([MU_TEST_MAILBOX],$1)
+m4_shift($*)
+m4_popdef([MU_TEST_MAILBOX])])
+
+AT_INIT
+
+AT_TESTED
+m4_include([const.at])
+
+AT_BANNER([mu-address functions])
+m4_include([address-count.at])
+m4_include([address-domain.at])
+m4_include([address-local.at])
+m4_include([address-email.at])
+m4_include([address-personal.at])
+
+AT_BANNER([mu-message functions])
+m4_include([message-print.at])
+m4_include([message-get-size.at])
+m4_include([message-get-lines.at])
+m4_include([message-get-envelope.at])
+m4_include([message-get-sender.at])
+m4_include([message-get-envelope-date.at])
+m4_include([message-get-header.at])
+m4_include([message-get-header-fields.at])
+m4_include([message-port-read-1.at])
+m4_include([message-port-read-2.at])
+
+m4_include([message-multipart.at])
+m4_include([message-get-num-parts.at])
+m4_include([message-get-part.at])
+
+m4_include([message-set-header.at])
+m4_include([message-set-header-fields.at])
+
+m4_include([message-create.at])
+m4_include([message-port-1.at])
+m4_include([message-port-2.at])
+m4_include([message-body.at])
+m4_include([bodyp.at])
+m4_include([message-delete.at])
+
+AT_BANNER([mu-mailbox functions])
+m4_include([mailbox-open.at])
+m4_include([mailbox-open-exc.at])
+m4_include([mailbox-print.at])
+m4_include([mailbox-get-url.at])
+m4_include([mailbox-get-size.at])
+m4_include([mailbox-messages-count.at])
+m4_include([mailbox-get-message.at])
+m4_include([mailbox-iterate.at])
+m4_include([mailbox-append-message.at])
+m4_include([mailbox-expunge.at])
+m4_include([message-get-flag.at])
+
+AT_BANNER([mu-mime functions])
+m4_include([mime-create.at])
+m4_include([mime-p.at])
+m4_include([mime-multipart-p.at])
+m4_include([mime-get-num-parts.at])
+m4_include([mime-get-part.at])
+m4_include([mime-add-part.at])
+
+#
+m4_popdef([MU_TEST_MAILBOX])
+m4_popdef([MU_GUILE_OUTPUT_FILTER])

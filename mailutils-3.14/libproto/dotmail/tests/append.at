@@ -1,0 +1,396 @@
+# GNU Mailutils -- a suite of utilities for electronic mail
+# Copyright (C) 2019-2022 Free Software Foundation, Inc.
+#
+# This library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+m4_pushdef([INBOX],
+[Received: (from hare@wonder.land)
+	by wonder.land id 3301
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100
+Date: Mon, 29 Jul 2002 22:00:01 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3301@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Invitation
+Return-Path: hare@wonder.land
+
+Have some wine
+.
+Received: (from alice@wonder.land)
+	by wonder.land id 3302
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:07 +0100
+Date: Mon, 29 Jul 2002 22:00:02 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3302@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+
+I don't see any wine
+.
+Received: (from hare@wonder.land)
+	by wonder.land id 3303
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:08 +0100
+Date: Mon, 29 Jul 2002 22:00:03 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3303@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Re: Invitation
+Return-Path: hare@wonder.land
+
+There isn't any
+.
+])
+
+DM_MESG([append],
+[INBOX],
+[AT_DATA([msg],
+[Received: (from alice@wonder.land)
+	by wonder.land id 3304
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date: Mon, 29 Jul 2002 22:00:04 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3304@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+Status: O
+X-UID: 1034
+
+Then it wasn't very civil of you to offer it
+])],
+[mbop count],
+[# Append new message
+append msg
+# Select it
+4
+# Check if it is scanned and loaded
+env_date
+env_sender
+attr
+headers
+body_text
+],
+
+[append: OK
+4 current message
+4 env_date: Mon Jul 29 21:00:09 2002
+4 env_sender: alice@wonder.land
+4 attr: -
+4 headers: Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Return-Path:alice@wonder.land
+
+4 body_text: Then it wasn't very civil of you to offer it
+
+count: 4
+])
+
+DM_MESG([append with changed status],
+[INBOX],
+[AT_DATA([msg],
+[Received: (from alice@wonder.land)
+	by wonder.land id 3304
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date: Mon, 29 Jul 2002 22:00:04 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3304@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+Status: O
+X-UID: 1034
+
+Then it wasn't very civil of you to offer it
+])],
+[mbop count],
+[# Append new message
+append -attr FRP msg
+# Select it
+4
+# Check if it is scanned and loaded
+env_date
+env_sender
+attr
+headers
+body_text
+],
+
+[append: OK
+4 current message
+4 env_date: Mon Jul 29 21:00:09 2002
+4 env_sender: alice@wonder.land
+4 attr: FPR
+4 headers: Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Return-Path:alice@wonder.land
+Status:FPR
+
+4 body_text: Then it wasn't very civil of you to offer it
+
+count: 4
+])
+
+DM_MESG([append with changed status and envelope],
+[INBOX],
+[AT_DATA([msg],
+[Received: (from alice@wonder.land)
+	by wonder.land id 3304
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date: Mon, 29 Jul 2002 22:00:04 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3304@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+
+Then it wasn't very civil of you to offer it
+])],
+[mbop count],
+[# Append new message
+append -sender gray@gnu.org -date 'Sat, 4 Dec 2021 08:00:00 UTC' -attr FRP msg
+# Select it
+4
+# Check if it is scanned and loaded
+env_date
+env_sender
+attr
+headers
+body_text
+],
+
+[append: OK
+4 current message
+4 env_date: Sat Dec  4 08:00:00 2021
+4 env_sender: gray@gnu.org
+4 attr: FPR
+4 headers: Received:from localhost by localhost; Sat,  4 Dec 2021 08:00:00 +0000
+Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Return-Path:gray@gnu.org
+Status:FPR
+
+4 body_text: Then it wasn't very civil of you to offer it
+
+count: 4
+])
+
+DM_MESG([append with uid],
+[Received: (from hare@wonder.land)
+	by wonder.land id 3301
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100
+Date: Mon, 29 Jul 2002 22:00:01 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3301@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Invitation
+Return-Path: hare@wonder.land
+X-IMAPbase: 1027976406 140
+X-UID: 137
+
+Have some wine
+.
+Received: (from alice@wonder.land)
+	by wonder.land id 3302
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:07 +0100
+Date: Mon, 29 Jul 2002 22:00:02 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3302@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+X-UID: 138
+
+I don't see any wine
+.
+Received: (from hare@wonder.land)
+	by wonder.land id 3303
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:08 +0100
+Date: Mon, 29 Jul 2002 22:00:03 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3303@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Re: Invitation
+Return-Path: hare@wonder.land
+X-UID: 139
+
+There isn't any
+.
+],
+[AT_DATA([msg],
+[Received: (from alice@wonder.land)
+	by wonder.land id 3304
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date: Mon, 29 Jul 2002 22:00:04 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3304@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+X-UID: 1034
+
+Then it wasn't very civil of you to offer it
+])],
+[mbop count\; uidvalidity\; uidnext],
+[# Append new message
+append msg
+# Select it
+4
+# Check if it is scanned and loaded
+env_date
+env_sender
+headers
+body_text
+# Check the uidvalidity and uidnext
+uidvalidity
+uidnext
+sync
+],
+
+[append: OK
+4 current message
+4 env_date: Mon Jul 29 21:00:09 2002
+4 env_sender: alice@wonder.land
+4 headers: Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Return-Path:alice@wonder.land
+X-UID:140
+
+4 body_text: Then it wasn't very civil of you to offer it
+
+uidvalidity: 1027976406
+uidnext: 141
+sync: OK
+count: 4
+uidvalidity: 1027976406
+uidnext: 141
+])
+
+DM_MESG([append to empty mailbox],
+[],
+[AT_DATA([msg],
+[Received: (from hare@wonder.land)
+	by wonder.land id 3301
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100
+Date: Mon, 29 Jul 2002 22:00:01 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3301@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Invitation
+Return-Path: hare@wonder.land
+
+Have some wine
+])],[],
+[# Append new message
+append msg
+# Select it
+1
+# Check if it is scanned and loaded
+env_date
+env_sender
+headers
+body_text
+],
+[append: OK
+1 current message
+1 env_date: Mon Jul 29 21:00:06 2002
+1 env_sender: hare@wonder.land
+1 headers: Received:(from hare@wonder.land) by wonder.land id 3301 for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100
+Date:Mon, 29 Jul 2002 22:00:01 +0100
+From:March Hare  <hare@wonder.land>
+Message-Id:<200207292200.3301@wonder.land>
+To:Alice  <alice@wonder.land>
+Subject:Invitation
+Return-Path:hare@wonder.land
+
+1 body_text: Have some wine
+
+])
+#
+# Test whether UIDs are updated in append mode.
+#
+AT_SETUP([append mode])
+AT_DATA([inbox],
+[Received: (from hare@wonder.land)
+	by wonder.land id 3301
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100
+Date: Mon, 29 Jul 2002 22:00:01 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3301@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Invitation
+Return-Path: hare@wonder.land
+X-IMAPbase: 10 3
+X-UID: 1
+
+Have some wine
+.
+Received: (from alice@wonder.land)
+	by wonder.land id 3302
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:07 +0100
+Date: Mon, 29 Jul 2002 22:00:02 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3302@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Return-Path: alice@wonder.land
+X-UID: 2
+
+I don't see any wine
+.
+])
+AT_DATA([msg],
+[Received: (from hare@wonder.land)
+	by wonder.land id 3303
+	for alice@wonder.land; Mon, 29 Jul 2002 22:00:08 +0100
+Date: Mon, 29 Jul 2002 22:00:03 +0100
+From: March Hare  <hare@wonder.land>
+Message-Id: <200207292200.3303@wonder.land>
+To: Alice  <alice@wonder.land>
+Subject: Re: Invitation
+Return-Path: hare@wonder.land
+
+There isn't any
+])
+AT_CHECK([mbop -a -m inbox append msg],
+[0],
+[append: OK
+])
+AT_CHECK([grep X-UID inbox],
+[0],
+[X-UID: 1
+X-UID: 2
+X-UID: 3
+])
+AT_CHECK([grep X-IMAPbase inbox | tr -s ' '],
+[0],
+[X-IMAPbase: 10 4
+])
+AT_CLEANUP

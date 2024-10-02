@@ -1,0 +1,33 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2018-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+# Test the %D headline specifier
+
+AT_SETUP([date formats])
+AT_KEYWORDS([date format])
+
+AT_CHECK([
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/mbox)
+MUT_MAIL_CMD --exec='set headline=">%d<"' --headers -f ./mbox
+MUT_MAIL_CMD --exec='set headline=">%DH<"' --headers -f ./mbox
+MUT_MAIL_CMD --exec='set headline=">%D{%Y-%m-%d \{%H:%M:%S\}}<"' --headers -f ./mbox
+],
+[0],
+[>Tue Jul 16 12:11<
+>12<
+>2002-07-16 {12:11:35}<
+])
+AT_CLEANUP

@@ -1,0 +1,2 @@
+usr/lib/python*/*-packages/mailutils/*.py
+usr/lib/python*/*-packages/mailutils/*.so

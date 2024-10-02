@@ -1,0 +1,8 @@
+# @configure_input@                                     -*- shell-script -*-
+# Configurable variable values for Mailutils test suite.
+# Copyright (C) 2004-2022 Free Software Foundation, Inc.
+
+PATH=@abs_builddir@:@abs_builddir@/..:$top_srcdir:$srcdir:$PATH
+x_imapbase_normalize() {
+        sed -e '/^X-IMAPbase:/s/  */ /g'
+}

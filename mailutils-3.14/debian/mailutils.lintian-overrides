@@ -1,0 +1,1 @@
+mailutils: elevated-privileges usr/bin/dotlock.mailutils 2755 root/root

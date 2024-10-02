@@ -1,0 +1,214 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2007-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_SETUP([reject])
+AT_KEYWORDS([action])
+
+AT_CHECK([
+MUT_PREREQ_CAPA([ENABLE_SENDMAIL])
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+
+AT_DATA([prog],[
+require "reject";
+
+reject text:
+I don't want to read these messages.
+
+Regards.
+.
+;
+])
+
+AT_DATA([filter.sed],[
+# mta log contains trailing spaces
+s/ $//
+# MIME boundaries are unpredictable, so we replace them with a constant string.
+s/^\(Content-Type: .*boundary=\).*/\1(boundary)/
+s/^--[[0-9]].*/--(boundary)/
+# Same goes for dates.
+s/^\(The original message was received at *\).*\( from .*\)/\1(date)\2/
+s/^\(Last-Attempt-Date:\).*/\1 (date)/
+s/^\(Arrival-Date:\).*/\1 (date)/
+# Remove body lengths
+/^LENGTH: /s/: [[0-9]][[0-9]]*/: X/
+])
+
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/MUT_SIEVE_MAILBOX)
+
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./MUT_SIEVE_MAILBOX prog || exit 1
+sed -f filter.sed $MAIL_DUMP
+],
+[0],
+[MSGID: 0001
+SENDER: MAILER-DAEMON@nonexistent.net
+NRCPT: 1
+RCPT[[0]]: coyote@desert.example.org
+LENGTH: X
+To: coyote@desert.example.org
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=(boundary)
+
+--(boundary)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The original message was received at (date) from coyote@desert.example.org.
+Message was refused by recipient's mail filtering program.
+Reason given was as follows:
+
+I don't want to read these messages.
+
+Regards.
+
+--(boundary)
+Content-Type: message/delivery-status
+
+Reporting-UA: sieve; GNU Mailutils AT_PACKAGE_VERSION
+Arrival-Date: (date)
+Final-Recipient: RFC822; foobar@nonexistent.net
+Action: deleted
+Disposition: automatic-action/MDN-sent-automatically;deleted
+Last-Attempt-Date: (date)
+
+--(boundary)
+Content-Type: message/rfc822
+
+From: coyote@desert.example.org
+To: roadrunner@acme.example.com
+Subject: I have a present for you
+X-Caffeine: C8H10N4O2
+
+Look, I'm sorry about the whole anvil thing, and I really
+didn't mean to try and drop it on you from the top of the
+cliff.  I want to try to make it up to you.  I've got some
+great birdseed over here at my place--top of the line
+stuff--and if you come by, I'll have it all wrapped up
+for you.  I'm really sorry for all the problems I've caused
+for you over the years, but I know we can work this out.
+
+--
+Wile E. Coyote   "Super Genius"   coyote@desert.example.org
+
+
+--(boundary)
+
+MSGID: 0001
+SENDER: MAILER-DAEMON@nonexistent.net
+NRCPT: 1
+RCPT[[0]]: b1ff@de.res.example.com
+LENGTH: X
+To: b1ff@de.res.example.com
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=(boundary)
+
+--(boundary)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The original message was received at (date) from b1ff@de.res.example.com.
+Message was refused by recipient's mail filtering program.
+Reason given was as follows:
+
+I don't want to read these messages.
+
+Regards.
+
+--(boundary)
+Content-Type: message/delivery-status
+
+Reporting-UA: sieve; GNU Mailutils AT_PACKAGE_VERSION
+Arrival-Date: (date)
+Final-Recipient: RFC822; foobar@nonexistent.net
+Action: deleted
+Disposition: automatic-action/MDN-sent-automatically;deleted
+Last-Attempt-Date: (date)
+
+--(boundary)
+Content-Type: message/rfc822
+
+From: youcouldberich!@reply-by-postal-mail.invalid
+To: rube@landru.example.edu
+Subject: $$$ YOU, TOO, CAN BE A MILLIONAIRE! $$$
+Date: TBD
+X-Number: 0015
+
+YOU MAY HAVE ALREADY WON TEN MILLION DOLLARS, BUT I DOUBT
+IT!  SO JUST POST THIS TO SIX HUNDRED NEWSGROUPS!  IT WILL
+GUARANTEE THAT YOU GET AT LEAST FIVE RESPONSES WITH MONEY!
+MONEY! MONEY! COLD HARD CASH!  YOU WILL RECEIVE OVER
+$20,000 IN LESS THAN TWO MONTHS!  AND IT'S LEGAL!!!!!!!!!
+!!!!!!!!!!!!!!!!!!111111111!!!!!!!11111111111!!1  JUST
+SEND $5 IN SMALL, UNMARKED BILLS TO THE ADDRESSES BELOW!
+
+
+--(boundary)
+
+MSGID: 0001
+SENDER: MAILER-DAEMON@nonexistent.net
+NRCPT: 1
+RCPT[[0]]: bar@dontmailme.org
+LENGTH: X
+To: bar@dontmailme.org
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=(boundary)
+
+--(boundary)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The original message was received at (date) from bar@dontmailme.org.
+Message was refused by recipient's mail filtering program.
+Reason given was as follows:
+
+I don't want to read these messages.
+
+Regards.
+
+--(boundary)
+Content-Type: message/delivery-status
+
+Reporting-UA: sieve; GNU Mailutils AT_PACKAGE_VERSION
+Arrival-Date: (date)
+Final-Recipient: RFC822; foobar@nonexistent.net
+Action: deleted
+Disposition: automatic-action/MDN-sent-automatically;deleted
+Last-Attempt-Date: (date)
+
+--(boundary)
+Content-Type: message/rfc822
+
+Received: (from bar@dontmailme.org)
+	by dontmailme.org id fERKR9N16790
+	for foobar@nonexistent.net; Fri, 28 Dec 2001 22:18:08 +0200
+Date: Fri, 28 Dec 2001 23:28:08 +0200
+From: Bar <bar@dontmailme.org>
+To: Foo Bar <foobar@nonexistent.net>
+Message-Id: <200112232808.fERKR9N16790@dontmailme.org>
+Subject: Coffee
+
+How about some coffee?
+
+--(boundary)
+
+],
+[REJECT on msg uid 1
+REJECT on msg uid 2
+REJECT on msg uid 3
+])
+
+AT_CLEANUP

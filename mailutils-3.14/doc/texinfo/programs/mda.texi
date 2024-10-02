@@ -1,0 +1,694 @@
+@c This is part of the GNU Mailutils manual.
+@c Copyright (C) 1999--2022 Free Software Foundation, Inc.
+@c See file mailutils.texi for copying conditions.
+@comment *******************************************************************
+@pindex mda
+GNU local mail delivery agent reads a message from its standard input
+and delivers it to one or more local recipients listed in the command
+line.  When we speak about @i{local} recipients, we mean that these
+are system users that are known to the system that runs @command{mda}.
+However, the mailboxes of these users can be local as well as remote
+ones.  @command{mda} is able to deliver mail to any mailbox format,
+supported by GNU Mailutils.  These formats, among others, include
+@samp{smtp://}, @samp{prog://} and @samp{sendmail://} which are
+equivalent to forwarding a message over @acronym{SMTP} to a remote
+node.
+
+@command{Mda} is also able to process incoming messages using
+Sieve, Scheme or Python scripts and, based on results of this
+processing, to take a decision on whether to actually deliver and
+where to deliver them.  Due to its extensive scripting facilities,
+@command{mda} offers much more flexibility than other popular
+@acronym{MDA}s.
+
+@menu
+* Sendmail-mda::         Using @command{mda} with Sendmail.
+* Exim-mda::             Using @command{mda} with Exim.
+* MeTA1-mda::            Using @command{mda} with MeTA1.
+* Mailbox Quotas::
+* MDA Scripting::
+* Forwarding::
+* Conf-mda::             @command{mda} Configuration File Summary.
+* Mailing lists::        How to implement Mailing Lists with @command{mda}.
+@end menu
+
+@node Sendmail-mda
+@subsection Using @command{mda} with Sendmail.
+@cindex Sendmail
+When used with Sendmail, @command{mda} must be invoked from the local
+mailer definition in the @file{sendmail.cf} file.  The flags
+@samp{lswS} must be set for the mailer.  These mean: the mailer is
+local, quote characters should be stripped off the address before
+invoking the mailer, the user must have a valid account on this
+machine and the userid should not be reset before calling the mailer.
+Additionally, the @samp{fn} flags may be specified to allow 
+@command{mda} to generate the usual @samp{From } envelope instead
+of the one supplied by @command{sendmail}. 
+
+If you wish to use @command{mda} with non-local authentication,
+such as @acronym{SQL} or @acronym{LDAP}, you also need to remove the
+@samp{w} flag, since in that case the user is not required to have a
+valid account on the machine that runs @command{sendmail}.
+
+Here is an example of mailer definition in @file{sendmail.cf}
+
+@example 
+Mlocal, P=/usr/local/sbin/mda,
+        F=lsDFMAw5:/|@@qSPfhn9,
+        S=EnvFromL/HdrFromL, R=EnvToL/HdrToL,
+        T=DNS/RFC822/X-Unix,
+        A=mail $u
+@end example
+
+To define local mailer in @samp{mc} source file, it will suffice to
+set:
+
+@example
+define(`LOCAL_MAILER_PATH', `/usr/local/sbin/mda')
+define(`LOCAL_MAILER_ARGS', `mail $u')
+@end example
+
+@node Exim-mda
+@subsection Using @command{mda} with Exim.
+@cindex Exim
+
+Using @command{mda} with Exim is quite straightforward.  The
+following example illustrates the definition of the appropriate transport
+and director in @file{exim.conf}:
+
+@example
+# transport
+mda_pipe:
+  driver = pipe
+  command = /usr/local/sbin/mda $local_part
+  return_path_add
+  delivery_date_add
+  envelope_to_add
+  
+# director
+mda:
+  driver = localuser
+  transport = mda_pipe
+@end example
+
+@node MeTA1-mda
+@subsection Using @command{mda} with MeTA1.
+@cindex MeTA1
+MeTA1 (@uref{http://meta1.org}) communicates with the delivery agent
+using @acronym{LMTP}.  Instead of using @command{mda} you will have to
+start the @acronym{LMTP} daemon @command{lmtpd} and configure MeTA1 to
+communicate with it.  @xref{MeTA1-lmtpd}, for details.
+
+@node Mailbox Quotas
+@subsection Mailbox Quotas
+
+@dfn{Mailbox quota} is a limit on the size of the mailbox.  When a
+mailbox size reaches this limit, @command{mda} stops accepting
+messages for this recipient and returns an error condition to the
+sender.  The error code is accompanied by the following error message:
+
+@example
+@var{user}: mailbox quota exceeded for this recipient
+@end example
+
+Furthermore, if accepting the incoming message would make the
+mailbox size exceed the quota, such a message will be rejected as
+well.  In this case, the error message is:
+
+@example
+@var{user}: message would exceed maximum mailbox size for this recipient
+@end example
+
+In both cases, the default return code will be @samp{service
+unavailable} (corresponding to the @acronym{SMTP} return code
+@samp{550}), unless the following statement is present in the
+@command{maidag} configuration file:
+
+@example
+quota @{
+  exit-tempfail yes;
+@}
+@end example
+
+@noindent
+in which case a temporary error will be returned.
+
+The mailbox quota can be retrieved from the following sources:
+
+@enumerate 1
+@item Authentication method.
+@item @acronym{DBM} file.
+@item @acronym{SQL} database.
+@end enumerate
+
+@menu
+* DBM Quotas::          Keeping Quotas in DBM File.
+* SQL Quotas::          Keeping Quotas in SQL Database.
+@end menu
+
+@node DBM Quotas
+@subsubsection Keeping Quotas in DBM File
+
+To use @acronym{DBM} quota database, GNU Mailutils must
+be compiled with one of the following command line options:
+@option{--with-gdbm}, @option{--with-berkeley-db}, @option{--with-ndbm},
+@option{--with-tokyocabinet}, or @option{--with-kyotocabinet}.
+Examine the output of @command{mda --show-config-options}, if not sure. 
+
+The quota database should have the following structure:
+
+@table @asis
+@item Key
+Key represents the user name.  Special key @samp{DEFAULT} means default
+quota value, i.e. the one to be used if the user is not explicitly
+listed in the database.
+
+@item Value
+Mailbox quota for this user.  If it is a number, it represents the
+maximum mailbox size in bytes.  A number may optionally be followed by
+@samp{kb} or @samp{mb}, meaning kilobytes and megabytes, respectively.
+
+A special value @samp{NONE} means no mailbox size limit for this user.
+@end table
+
+Here is an example of a quota database in text form:
+
+@example
+# Default quota value:
+DEFAULT         5mb
+
+# Following users have unlimited mailbox size
+root            NONE
+smith           NONE
+
+# Rest of users
+plog            26214400
+karin           10mB
+@end example
+
+To use the @acronym{DBM} quota database, specify its absolute name using
+the @code{database} configuration statement in the @code{quota}
+section, e.g.:
+
+@example
+quota @{
+  database /etc/mail/quota.db;
+@}  
+@end example
+
+@node SQL Quotas
+@subsubsection Keeping Quotas in SQL Database
+
+User quotas can be kept in an SQL table as well.  Currently (as of mailutils
+version @value{VERSION}) it is assumed that this table can be accessed
+using the credentials set in @samp{sql} configuration statement
+(@pxref{SQL Statement}).
+
+For example, suppose you have the following quota table:
+
+@example
+create table mailbox_quota (
+  user_name varchar(32) binary not null,
+  quota int,
+  unique (user_name)
+);
+@end example
+
+@noindent
+
+To retrieve user quota the following query can be used:
+
+@example
+SELECT quota FROM mailbox_quota WHERE user_name='$@{user@}'
+@end example
+
+To define this query use the @code{sql-query} statement:
+
+@example
+quota @{
+  sql-query "SELECT quota "
+            "FROM mailbox_quota "
+            "WHERE user_name='$@{user@}'";
+@}
+@end example
+
+There are no special provisions for specifying group quotas, similar to
+@samp{DEFAULT} in @acronym{DBM} databases.  This is because group quotas can
+easily be implemented using @acronym{SQL} language.  @command{Mda}
+always uses the first tuple from the set returned by mailbox quota
+query.  So, you can add a special entry to the @code{mailbox_quota}
+table that would keep the group quota.  In the discussion below we assume
+that the @code{user_name} column for this entry is lexicographically
+less than any other user name in the table.  Let's suppose the group
+quota name is @samp{00DEFAULT}.  Then the following query:
+
+@example
+SELECT quota
+FROM mailbox_quota
+WHERE user_name IN ('$@{user@}','00DEFAULT')
+ORDER BY user_name DESC
+@end example
+
+@noindent
+will return two tuples if the user is found in
+@code{mailbox_quota}.  Due to @code{ORDER} statement, the first tuple
+will contain quota for the user, which will be used by
+@command{mda}.  On the other hand, if the requested user name is not
+present in the table, the above query will return a single tuple
+containing the group quota.
+
+The following configuration statement instructs @command{maidag} to
+use this query for retrieving the user quota:
+
+@example
+quota @{
+  sql-query "SELECT quota "
+            "FROM mailbox_quota "
+            "WHERE user_name IN ('$@{user@}','00DEFAULT') "
+            "ORDER BY user_name DESC";
+@}            
+@end example
+
+@node MDA Scripting
+@subsection Scripting in @command{mda}
+@command{Mda} can use global or per-user @dfn{mail filters} to
+decide whether to deliver the message, and where to deliver it.  As of
+Mailutils version @value{VERSION}, such mail filters may be written in
+the following languages:
+
+@itemize @bullet
+@item Sieve
+@xref{Sieve Language}.
+
+@item Scheme
+@item Python
+@end itemize
+
+Mail filters to use are specified using @samp{script} configuration
+statement.  The following meta-symbols can be used in its argument:
+
+@table @asis
+@item ~
+@itemx %h
+Expands to the recipient home directory.
+
+@item %u
+Expands to the recipient user name.
+@end table
+
+@anchor{scripting language}
+By default, the filename extension decides which scripting language will
+be used.  User can alter the choice using @samp{language} configuration
+statement.  For example:
+
+@example
+script @{
+  language python;
+  pattern "~/.maidag-py-filter";
+@}  
+@end example
+
+@menu
+* Sieve MDA Filters::
+* Scheme MDA Filters::
+* Python MDA Filters::
+@end menu
+
+@node Sieve MDA Filters
+@subsubsection Sieve MDA Filters
+@kwindex script
+The file name of the Sieve filter to use is specified using
+@samp{script} configuration statement.  For example, the following
+configuration statement:
+
+@example
+script @{
+  pattern "~/.maidag.sv";
+@}  
+@end example
+
+@noindent
+instructs @command{maidag} to use file @file{.maidag.sv} in the
+recipient home directory as a Sieve filter.
+
+Normal message delivery is attempted if execution of the Sieve code
+ended with @code{keep} action (either implicit or explicit).
+
+Other Sieve actions are executed as described in @ref{Actions}.  For
+example, to deliver message to another mailbox, use the
+@code{fileinto} action. 
+
+Any modifications to headers or body of the message performed by the
+Sieve code will be visible in the delivered message.
+
+@node Scheme MDA Filters
+@subsubsection Scheme MDA Filters
+@kwindex script
+The file name of the Scheme mail filter is specified using
+@samp{script} configuration statement.  For example, the following
+configuration statement:
+
+@example
+script @{
+  pattern "~/.maidag.scm";
+@}  
+@end example
+
+@noindent
+instructs @command{mda} to use file @file{.maidag.scm} in the
+recipient home directory as a Scheme filter.
+
+@node Python MDA Filters
+@subsubsection Python MDA Filters
+@kwindex script
+
+The file name of the Python mail filter is specified using
+@samp{script} configuration statement.  For example, the following
+configuration statement:
+
+@example
+script @{
+  pattern "~/.maidag.py";
+@}  
+@end example
+
+@noindent
+instructs @command{mda} to use the file @file{.maidag.py} in the
+recipient home directory as a Python filter.
+
+@noindent
+A simple example of a mail filter written in Python:
+
+@example
+from mailutils import *
+import maidag
+import re
+
+msg = message.Message (maidag.message)
+hdr = msg.header
+
+try:
+    if 'List-Post' in hdr and 'Received' in hdr \
+       and hdr['Received'].find ('fencepost.gnu.org') != -1:
+
+        # check envelope's sender address
+        m = re.search (r'([\w\-]+)-bounces\+([\w]+)=.*',
+                       msg.envelope.get_sender ())
+        if m:
+            lbox = m.group (1)
+            user = m.group (2)
+            # open destination mailbox and append message
+            dst = mailbox.MailboxDefault ('~/Mail/%s' % lbox)
+            dst.open ('ac')
+            dst.append_message (msg)
+            dst.close ()
+            # set deleted flag so maidag will not deliver msg elsewhere
+            msg.attribute.set_deleted ()
+except Exception:
+    pass
+@end example
+
+@node Forwarding
+@subsection Forwarding
+@cindex forward
+A @dfn{forward file} is a special file in the user's home directory that
+contains the email address of the mailbox where the user wants to
+forward his mail.  Normally, forward files are processed by
+@acronym{MTA}.  However, there are some @acronym{MTA} that lack this
+feature.  One of them is MeTA1.
+
+@command{Mda} provides a forwarding feature that is useful to
+compensate the lack of it.  This feature is controlled by the
+@code{forward} section in the configuration file:
+
+@example
+forward @{
+  # Process forward file.
+  file @var{name};
+  # Configure safety checks for the forward file.
+  file-checks (@var{list});
+@}
+@end example
+
+@kwindex file, forward
+The name of the forward file is given by the @code{file}
+statement in the @code{forward} section.  A common usage is:
+
+@example
+forward @{
+  file .forward;
+@}  
+@end example
+
+The forward file is always searched in the recipient home directory.
+
+Before actually using the forward file, a number of safety checks are
+performed on it.  If the file fails to pass one of these checks, no
+forwarding is performed and the message is delivered as usual.  These
+checks are configured using the @code{forward.file-checks} statement:
+
+@example
+forward @{
+  file .forward;
+  file-checks (@var{list});
+@}  
+@end example
+
+Its argument is a list of the following keywords:
+
+@table @asis
+@item groupwritablefile
+@itemx file_iwgrp
+The file must not be group writable.
+
+@item worldwritablefile
+@itemx file_iwoth
+The file must not be world writable.
+
+@item linkedfileinwritabledir
+@itemx link
+The file cannot be a symlink in a writable directory.
+
+@item fileingroupwritabledir
+@itemx dir_iwgrp
+The file cannot reside in a group writable directory.
+
+@item fileinworldwritabledir
+@itemx dir_iwoth
+The file cannot reside in a world writable directory.
+
+@item all
+All of the above checks.
+@end table
+
+The default is @samp{file-checks all}.
+
+Each of these keywords may be prefixed by @samp{no} to disable this
+particular check.  For example:
+
+@example
+forward @{
+  file-checks (nodir_iwoth, nodir_iwgrp);
+  file .forward;
+@}  
+@end example
+
+@node Conf-mda
+@subsection MDA Configuration File Summary
+
+The behavior of @command{mda} is affected by the following configuration
+statements:
+
+@multitable @columnfractions 0.3 0.6
+@headitem Statement @tab Reference
+@item debug         @tab @xref{debug statement}.
+@item mailbox       @tab @xref{mailbox statement}.
+@item locking       @tab @xref{locking statement}.
+@item pam           @tab @xref{pam statement}.
+@item sql           @tab @xref{sql statement}.
+@item virtdomain    @tab @xref{virtdomain statement}.
+@item radius        @tab @xref{radius statement}.
+@item ldap          @tab @xref{ldap statement}.
+@item auth          @tab @xref{auth statement}.
+@item mailer        @tab @xref{mailer statement}.
+@end multitable
+
+@deffn {MDA Config} stderr @var{bool}
+If @var{bool} is true, log to standard error instead of syslog.
+@end deffn
+
+@deffn {MDA Config} deliver @{ ... @}
+This section contains general delivery settings:
+
+@example
+deliver @{
+  domain @var{string};
+  exit-multiple-delivery-success @var{arg};
+@};
+@end example
+@end deffn
+
+@deffn {deliver} domain @var{name}
+Default email domain.
+@end deffn
+
+@deffn {deliver} exit-multiple-delivery-success @var{arg};
+In case of multiple delivery, exit with code 0 if at least
+one delivery succeeded.
+@end deffn
+
+
+@deffn {MDA Config} forward @{ ... @}
+Controls the forwarding support:
+
+@example
+forward @{
+  file @var{name};
+  file-checks (@var{list});
+@}
+@end example
+@end deffn
+
+@deffn {forward} file @var{name}
+Defines the name of the forward file.  E.g.:
+
+@example
+forward @{
+  file .forward;
+@}  
+@end example
+
+@xref{Forwarding}, for a detailed description.
+@end deffn
+
+@deffn {forward} file-checks (@var{list})
+Configures safety checks to be performed on the forward file prior to
+using it.  @xref{Forwarding}, for a detailed description.
+@end deffn
+
+@deffn {MDA Config} quota @{ ... @}
+This section configures mail quota support.  @xref{Mailbox Quotas},
+for a detailed description.
+
+@example
+quota @{
+  database @var{name};
+  sql-query @var{query};
+  exit-tempfail @var{bool};
+@}
+@end example
+@end deffn
+
+@deffn {quota} database @var{name}
+Sets the name of the quota database in DBM format.  @xref{DBM Quotas}.
+@end deffn
+
+@deffn {quota} sql-query @var{query}
+If the quotas are kept in a SQL table, this statement defines the SQL
+query to retrieve the quota for a given user name.  @xref{SQL Quotas}.
+@end deffn
+
+@deffn {quota} exit-tempfail @var{bool}
+By default, if a message cannot be delivered because the user has
+exceeded its mail quota, or its delivery would cause it to be
+exceeded, @command{MDA} exits with the @samp{service unavailable}
+status, which causes MTA to return the 550 code.  If
+@code{exit-tempfail} is set to true, it will return a temporary error
+instead.
+@end deffn
+
+@deffn {MDA Config} script @{ ... @}
+Controls scripting.  @xref{MDA Scripting}.
+
+@example
+script @{
+  language @var{lang};
+  pattern @var{glob};
+@}
+@end example
+@end deffn
+
+@deffn {script} language @var{lang}
+Defines the language that is used for scripting.  Allowed values for
+@var{lang} are: @samp{sieve}, @samp{scheme}, or @samp{python}.
+@xref{scripting language}.
+@end deffn
+
+@deffn {script} pattern @var{pat}
+Defines the pattern for the script file name.  The @samp{~} at the
+begiining of the pattern will be replaced with the name of the home
+directory of the recipient user.  The @samp{%u} in pattern will be
+replaced with the recipient user name, and @samp{%h} with the home
+directory for that user.
+@end deffn
+
+@node Mailing lists
+@subsection Mailing list implementation
+
+This subsection explains how to implement mailing lists in
+@command{mda} using the @samp{prog} mailbox scheme.
+
+Delivery to the @samp{prog} mailbox results in invoking the specified
+command with the given arguments and passing the message to its
+standard input.  There are two ways to specify a @samp{prog} mailbox:
+
+@table @asis
+@item prog://@var{program}?@var{args}
+Here, @var{program} is the absolute pathname of the program binary,
+and @var{args} are its arguments, separated by @samp{&} signs.
+
+@item |@var{program} @var{args}
+In this notation, @var{args} are command line arguments separated by
+white space.
+@end table
+
+In both cases, @var{args} do not include @code{argv[0]}.
+
+The @samp{prog} mailbox can be used to implement mailing lists.
+
+For example, suppose that the @command{mda} configuration contains:
+
+@example
+auth @{
+  authorization (sql, system);
+  authentication (generic, system);
+@}
+
+sql @{
+  interface mysql;
+  db mail;
+  getpwnam "SELECT user as name, mailbox, "
+           "'x' as passwd, 500 as uid, 2 as gid, "
+           "'/nonexistent' as dir, '/sbin/nologin' as shell "
+           "FROM userdb "
+           "WHERE user='$@{user@}'";
+@}
+@end example
+
+Then, the following entries in the @samp{userdb} table implement the
+@email{mailman@@yourdomain} mailing list:
+
+@example
+mysql> select * from userdb;
++---------------------+---------------------------------------+
+| user                | mailbox                               |
++---------------------+---------------------------------------+
+| mailman             | |/usr/bin/mailman post mailman        |
+| mailman-admin       | |/usr/bin/mailman admin mailman       |
+| mailman-bounces     | |/usr/bin/mailman bounces mailman     |
+| mailman-confirm     | |/usr/bin/mailman confirm mailman     |
+| mailman-join        | |/usr/bin/mailman join mailman        |
+| mailman-leave       | |/usr/bin/mailman leave mailman       |
+| mailman-owner       | |/usr/bin/mailman owner mailman       |
+| mailman-request     | |/usr/bin/mailman request mailman     |
+| mailman-subscribe   | |/usr/bin/mailman subscribe mailman   |
+| mailman-unsubscribe | |/usr/bin/mailman unsubscribe mailman |
++---------------------+---------------------------------------+
+@end example
+
+
+
+
+
+
+

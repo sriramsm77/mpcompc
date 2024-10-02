@@ -1,0 +1,25 @@
+Author: Jordi Mallach <jordi@debian.org>
+Description: Make MU_SIEVE_MODDIR configurable.
+ This makes libmailutilsX versions coinstallable.
+Forwarded: yes
+
+diff --git a/configure.ac b/configure.ac
+index fa5baa031..174ee017a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -48,7 +48,14 @@ AC_SUBST(MU_LIB_PY)
+ 
+ dnl Other variables
+ AC_SUBST(mu_aux_dir,'$(top_srcdir)/mu-aux')
+-AC_SUBST(MU_SIEVE_MODDIR,'$(libdir)/$(PACKAGE)')
++
++AC_ARG_VAR([MU_SIEVE_MODDIR],
++           [Set the location for the sieve modules. Default is \$libdir/$(PACKAGE)])
++
++AC_SUBST(MU_SIEVE_MODDIR)
++if test -z "$MU_SIEVE_MODDIR"; then
++  MU_SIEVE_MODDIR='$(libdir)/$(PACKAGE)'
++fi
+ 
+ AC_SUBST(MU_COMMON_LIBRARIES,'$(LTLIBINTL) $(LTLIBICONV)')
+ AC_SUBST(MU_APP_LIBRARIES,'${top_builddir}/lib/libmuaux.la ${UNISTRING_LIBS}')

@@ -1,0 +1,102 @@
+# -*- tcl -*-
+# This file is part of Mailutils testsuite.
+# Copyright (C) 2002-2022 Free Software Foundation, Inc.
+#  
+# GNU Mailutils is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# GNU Mailutils is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#  
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>. 
+
+mail_start "--file=%teaparty.mbox"
+mail_command "set readonly"
+
+mail_test "from 1,2,5-7 9" \
+">N   1 March Hare         Mon Jul 29 22:00  11/302   Invitation"\
+" N   2 Alice              Mon Jul 29 22:00  11/312   Re: Invitation"\
+" N   5 March Hare         Mon Jul 29 22:00  11/353   Re: Invitation"\
+" N   6 Alice              Mon Jul 29 22:00  12/368   Re: Invitation"\
+" N   7 March Hare         Mon Jul 29 22:00  11/316   Personal remark"\
+" N   9 March Hare         Mon Jul 29 22:00  11/345   Riddle (was Re: Personal "
+mail_test "from ^" \
+">N   1 March Hare         Mon Jul 29 22:00  11/302   Invitation"\
+
+mail_test "from $" \
+" N  95 Alice              Mon Jul 29 22:01  12/380   Thoughts"
+
+# # FIXME: not yet functional 
+# #mail_test "from hatter" 
+	
+mail_test "tag from:/dormouse/"
+mail_test "from :t" \
+" T  17 Dormouse           Mon Jul 29 22:00  13/443   Re: Be specific"\
+" T  31 Dormouse           Mon Jul 29 22:00  12/365   Re: Remark"\
+" T  49 Dormouse           Mon Jul 29 22:00  11/350   Re: Discussing Time"\
+" T  61 Dormouse           Mon Jul 29 22:01  12/383   Re: Request for a story"\
+" T  65 Dormouse           Mon Jul 29 22:01  13/472   Story (was Re: Request fo"\
+" T  67 Dormouse           Mon Jul 29 22:01  11/314   Re: Story"\
+" T  69 Dormouse           Mon Jul 29 22:01  11/316   Re: Story"\
+" T  77 Dormouse           Mon Jul 29 22:01  11/315   Re: Story"\
+" T  79 Dormouse           Mon Jul 29 22:01  12/359   Re: Story"\
+" T  81 Dormouse           Mon Jul 29 22:01  12/379   Re: Story"\
+" T  83 Dormouse           Mon Jul 29 22:01  11/301   Re: Story"\
+" T  88 Dormouse           Mon Jul 29 22:01  11/323   Re: Story"\
+" T  89 Dormouse           Mon Jul 29 22:01  12/391   Re: Story"\
+" T  91 Dormouse           Mon Jul 29 22:01  11/301   Re: Story"\
+" T  92 Dormouse           Mon Jul 29 22:01  14/488   Re: Story"
+
+mail_command "untag :t"
+
+mail_test "from :t"
+
+# FIXME: This should be a single command, actually. But readline's echo
+# seems to split it so that mail_command fails. 
+mail_command "tag subject:/invitation/"
+mail_command "tag subject:/riddle/"
+mail_command "tag subject:/time/" 
+mail_command "tag subject:/watch/"
+mail_command "tag subject:/specific/"
+mail_command "tag subject:/guess/"
+mail_command "tag subject:/story/"
+
+mail_test "from :T" \
+" N   7 March Hare         Mon Jul 29 22:00  11/316   Personal remark"\
+" N   8 Alice              Mon Jul 29 22:00  11/359   Re: Personal remark"\
+" N  30 Hatter             Mon Jul 29 22:00  11/328   Remark"\
+" N  31 Dormouse           Mon Jul 29 22:00  12/365   Re: Remark"\
+" N  71 March Hare         Mon Jul 29 22:01  11/302   Remark"\
+" N  72 Alice              Mon Jul 29 22:01  12/331   Re: Remark"\
+" N  73 Hatter             Mon Jul 29 22:01  12/359   Re: Remark"\
+" N  74 Alice              Mon Jul 29 22:01  11/318   Personal remark"\
+" N  75 Hatter             Mon Jul 29 22:01  11/331   Re: Personal remark"\
+" N  84 Hatter             Mon Jul 29 22:01  12/352   Let's move"\
+" N  94 Hatter             Mon Jul 29 22:01  11/312   Rude remark"\
+" N  95 Alice              Mon Jul 29 22:01  12/380   Thoughts"
+
+mail_command "untag :t"
+
+#FIXME: should be 'mail_command "print 2"'
+mail_test "print 2" \
+"Received: (from alice@wonder.land) "\
+"	by wonder.land id 3302"\
+"	for hare@wonder.land; Mon, 29 Jul 2002 22:00:07 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:02 +0100"\
+"From: Alice  <alice@wonder.land>"\
+"Message-Id: <200207292200.3302@wonder.land>"\
+"To: March Hare  <hare@wonder.land>"\
+"Subject: Re: Invitation"\
+""\
+"I don't see any wine"
+
+mail_test "from :r" \
+">R   2 Alice              Mon Jul 29 22:00  11/312   Re: Invitation"	
+
+mail_stop
+# End of tag.exp

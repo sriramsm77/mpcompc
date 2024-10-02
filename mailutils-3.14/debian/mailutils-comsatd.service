@@ -1,0 +1,16 @@
+[Unit]
+Description=GNU comsat daemon
+Documentation=info:/usr/share/info/mailutils
+Documentation=man:comsatd(8)
+After=network.target rsyslog.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/comsatd --config-lint
+ExecStart=/usr/sbin/comsatd --daemon
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

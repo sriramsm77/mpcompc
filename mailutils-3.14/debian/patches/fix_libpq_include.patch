@@ -1,0 +1,18 @@
+Author: Jordi Mallach <jordi@debian.org>
+Date:   Tue Feb 9 16:04:38 2021 +0100
+
+    Fix postgresql include dir.
+
+diff --git a/sql/postgres.c b/sql/postgres.c
+index 1c6bed90b..b9a8cf89d 100644
+--- a/sql/postgres.c
++++ b/sql/postgres.c
+@@ -24,7 +24,7 @@
+ #include <mailutils/sql.h>
+ #include <mailutils/cctype.h>
+ 
+-#include <libpq-fe.h>
++#include <postgresql/libpq-fe.h>
+ 
+ static char *
+ chop (char *str)

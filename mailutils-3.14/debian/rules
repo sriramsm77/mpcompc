@@ -1,0 +1,77 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+# Enable hardening flags
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--no-as-needed
+
+# Enable verbose output on the testsuite if a debug build is requested
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+   RUNTESTFLAGS = -v -v -v --debug
+endif
+
+override_dh_auto_configure:
+	DEFAULT_CUPS_CONFDIR=/usr/share/cups/mime \
+	MU_SIEVE_MODDIR=\$${libdir}/mailutils8 \
+	dh_auto_configure -- \
+	  --with-lispdir=\$${prefix}/share/emacs/site-lisp \
+	  --enable-virtual-domains \
+	  --enable-mh \
+	  --enable-python \
+	  --with-gnutls \
+	  --with-berkeley-db \
+	  --with-gdbm \
+	  --with-kyotocabinet \
+	  --with-gssapi \
+	  --with-gsasl \
+	  --with-guile \
+	  --with-mysql \
+	  --with-postgres \
+	  --disable-rpath \
+	  --disable-static \
+	  --disable-cxx \
+	  --disable-nntp
+
+override_dh_auto_build:
+	dh_auto_build
+	$(MAKE) -C doc html
+
+override_dh_auto_install:
+	dh_auto_install
+	# These binaries conflict with elm-me. We need to rename them, as
+	# we're using alternatives for them.
+	cd debian/tmp; \
+	for i in dotlock frm from messages mail movemail readmsg; do \
+	   mv usr/bin/$$i usr/bin/$$i.mailutils; \
+	done
+
+	# Generate manpages, but remove the s[ug]id bits from binaries
+	# so LD_LIBRARY_PATH works.
+	chmod 755 $(CURDIR)/debian/tmp/usr/bin/dotlock.mailutils
+	chmod 755 $(CURDIR)/debian/tmp/usr/sbin/mda
+	sh debian/mangen.sh $(CURDIR)/debian/tmp/usr
+	# Restore correct perms to the binaries that need it.
+	chmod 2755 $(CURDIR)/debian/tmp/usr/bin/dotlock.mailutils
+	chmod 4755 $(CURDIR)/debian/tmp/usr/sbin/mda
+
+	# Get rid of files we don't want to install
+	find $(CURDIR)/debian/tmp -name "*.pyc" -delete
+	find $(CURDIR)/debian/tmp -name "*.la" -delete
+	find $(CURDIR)/debian/tmp/usr/share/man/man1 -name "*.1" -delete
+
+override_dh_install:
+	dh_install -plibmailutils8 -Xlibmu_dbm
+	dh_install --remaining-packages
+
+override_dh_auto_test:
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) -k check RUNTESTFLAGS="$(RUNTESTFLAGS)" || true
+endif
+
+override_dh_fixperms:
+	dh_fixperms -Xdotlock.mailutils

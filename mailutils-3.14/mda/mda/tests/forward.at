@@ -1,0 +1,88 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2010-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_SETUP([forwarding support])
+AT_KEYWORDS([maidag forward])
+
+m4_pushdef([TESTMDA_CONF],[cat > testmda.conf <<EOF
+mailbox {
+  mailbox-pattern "$(pwd)/spool/\${user}";
+}  
+
+mailer {
+  url "sendmail:$abs_top_builddir/testsuite/mockmail";
+}
+
+forward {
+  file "$forward";
+  file-checks none;
+}
+EOF
+])
+
+AT_CHECK([
+test -w / && AT_SKIP_TEST
+forward=`pwd`/my.forward
+namelist=`sed '/^#/d;s/:.*//' /etc/passwd | sed '3,$d'`
+test -n "$namelist" || AT_SKIP_TEST
+
+cat > my.forward <<EOT
+foo@bar.baz
+\\$namelist
+EOT
+
+set -- $namelist
+
+cat > experr <<EOT
+testmda: notice: skipping forward file $forward: already processed
+EOT
+
+cat $INPUT_MSG > expout.0
+
+AT_DATA([expout.1],
+[[MSGID: 0001
+SENDER: gulliver@example.net
+NRCPT: 1
+RCPT[0]: foo@bar.baz
+LENGTH: 2691
+]])
+
+cat $INPUT_MSG >> expout.1
+echo "" >> expout.1
+
+mkdir spool
+TESTMDA_CONF
+testmda --from gulliver@example.net $1 < $INPUT_MSG || exit $?
+
+for name in $namelist
+do
+  dumpmail spool/$name | \
+      cmp expout.0 - >/dev/null || echo "$name mailbox mismatch" >&2
+done
+
+if test -f mail.dump; then
+  cmp mail.dump expout.1 >/dev/null || echo "remote copy mismatch" >&2
+else
+  echo "remote delivery failed" >&2
+fi  
+],
+[0],
+[],
+[experr])
+
+m4_popdef([TESTMDA_CONF])
+
+AT_CLEANUP

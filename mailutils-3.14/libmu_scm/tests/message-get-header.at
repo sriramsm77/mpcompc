@@ -1,0 +1,18 @@
+# This file is part of GNU Mailutils                    -*- Autotest -*-
+# Copyright (C) 2018-2022 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+AT_SETUP([message-get-header])
+AT_KEYWORDS([message])
+MU_GUILE_CHECK([
+(let ((msg (test-message)))
+  (display (mu-message-get-header msg "From"))
+  (newline)
+  (display (mu-message-get-header msg "Nonexistent"))
+  (newline))],
+0,
+  [user@example.org
+#f
+])
+AT_CLEANUP

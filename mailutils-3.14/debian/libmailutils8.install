@@ -1,0 +1,2 @@
+usr/lib/*/lib*.so.*
+usr/lib/*/mailutils8/*.so

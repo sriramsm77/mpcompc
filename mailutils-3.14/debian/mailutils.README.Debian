@@ -1,0 +1,29 @@
+mailutils for Debian
+=============================
+
+Welcome to GNU mailutils.  It has been configured with the following
+options:
+
+          --with-lispdir=\$${prefix}/share/emacs/site-lisp \
+          --enable-virtual-domains \
+          --enable-mh \
+          --enable-python \
+          --with-gnutls \
+          --with-berkeley-db \
+          --with-gdbm \
+          --with-kyotocabinet \
+          --with-gssapi \
+          --with-gsasl \
+          --with-guile \
+          --with-mysql \
+          --with-postgres \
+          --disable-rpath \
+          --disable-static \
+          --disable-cxx \
+          --disable-nntp
+
+This package is work in progress, and feedback is appreciated, either
+through bug reports in the Debian BTS, or upstream at
+bug-mailutils@gnu.org.
+
+ Jordi Mallach <jordi@debian.org>  Fri, 22 Jun 2012 22:05:45 +0200

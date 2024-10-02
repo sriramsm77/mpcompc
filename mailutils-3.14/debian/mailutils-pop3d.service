@@ -1,0 +1,16 @@
+[Unit]
+Description=GNU POP3 daemon
+Documentation=info:/usr/share/info/mailutils
+Documentation=man:pop3d(8)
+After=network.target rsyslog.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/pop3d --config-lint
+ExecStart=/usr/sbin/pop3d --daemon
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+mailutils-guile for Debian
+==============================
+
+This package includes a few guile dynamic libraries, but they can't be
+used without their corresponding .so files. These files are in the
+libmailutils-dev package, so mailutils-guile needs to depend on it to make
+the .scm files usable.
+
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 27 Sep 2009 21:33:42 +0200

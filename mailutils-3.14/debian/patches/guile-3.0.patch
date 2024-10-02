@@ -1,0 +1,17 @@
+From: Rob Browning <rlb@defaultvalue.org>
+To: 969675@bugs.debian.org
+Subject: Re: mailutils: please upgrade to guile-3.0 soon, if feasible
+
+diff --git a/configure.ac b/configure.ac
+index 174ee01..74774fe 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1198,7 +1198,7 @@ AC_SUBST([GUILE_BINDIR])
+ AC_SUBST([LIBMU_SCM])
+ AC_SUBST([LIBMU_SCM_DEPS])
+ AC_SUBST([MU_GUILE_SIEVE_MOD_DIR])
+-GINT_INIT([gint],[2.2.0 with-guile],
++GINT_INIT([gint],[3.0 with-guile],
+ 	  [useguile=yes
+  	   AC_DEFINE([WITH_GUILE],1,[Enable Guile support])
+            GUILE_BINDIR=`guile-config info bindir`

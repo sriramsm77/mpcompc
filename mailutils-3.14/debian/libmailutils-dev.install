@@ -1,0 +1,6 @@
+usr/bin/mailutils-config
+usr/bin/mailutils
+usr/libexec/mailutils/mailutils-*
+usr/include/mailutils/*
+usr/lib/*/lib*.so
+usr/share/aclocal/mailutils.m4

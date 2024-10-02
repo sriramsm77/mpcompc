@@ -1,0 +1,23 @@
+# This file is part of GNU Mailutils                    -*- Autotest -*-
+# Copyright (C) 2018-2022 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+AT_SETUP([mu-mailbox-first/next-message])
+AT_KEYWORDS([mailbox])
+WITH_MAILBOX([spool/mbox1],
+ [MU_GUILE_CHECK([
+(let ((mbox (mu-mailbox-open "mbox" "r")))
+  (do ((msg (mu-mailbox-first-message mbox) (mu-mailbox-next-message mbox)))
+      ((not (mu-mailbox-more-messages? mbox)))
+    (display msg)(newline)))], 
+ 0,
+[#<message "foobar@nonexistent.net" "Fri Dec 28 22:18" 45 1255>
+#<message "bar@dontmailme.org" "Fri Dec 28 23:28" 14 535>
+#<message "gray@example.net" "Sat Jul 13 00:43" 43 1570>
+#<message "gray@example.net" "Sat Jul 13 00:50" 85 3400>
+#<message "gray@example.net" "Sat Jul 13 00:43" 27 857>
+])])
+AT_CLEANUP
+

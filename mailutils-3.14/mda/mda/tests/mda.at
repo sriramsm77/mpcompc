@@ -1,0 +1,73 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2010-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+m4_pushdef([TESTMDA_CONF],[cat > testmda.conf <<EOF
+mailbox {
+  mailbox-pattern "$(pwd)/spool/\${user}";
+}  
+EOF
+])
+
+AT_SETUP([mda])
+AT_KEYWORDS([mda mda0])
+
+AT_CHECK([
+cat $INPUT_MSG > expout
+mkdir spool
+TESTMDA_CONF
+testmda --from gulliver@example.net root < $INPUT_MSG || exit $?
+dumpmail spool/root
+],
+[0],
+[expout])
+
+AT_CLEANUP
+
+#
+AT_SETUP([mda, explicit envelope])
+AT_KEYWORDS([mda mda1])
+
+AT_CHECK([
+date="Thu Oct  7 19:10:57 2010"
+envelope="From gulliver $date"
+echo "$envelope" > msg
+cat $INPUT_MSG >> msg
+cat $INPUT_MSG > expout
+mkdir spool
+TESTMDA_CONF
+testmda  --from gulliver@example.net root < msg || exit $?
+dumpmail spool/root
+case $MU_DEFAULT_SCHEME in
+mbox)
+    head -1 spool/root
+    echo "$envelope" >> expout
+    ;;
+mh)    
+    sed -n -e '/^X-Envelope-Date: */s///p' spool/root/1
+    echo "$date" >> expout
+    ;;
+maildir)
+    sed -n -e '/^X-Envelope-Date: */s///p' $(find spool/root/new -type f | head -n 1)
+    echo "$date" >> expout
+    ;;
+esac
+],
+[0],
+[expout])
+
+AT_CLEANUP
+
+m4_popdef([TESTMDA_CONF])

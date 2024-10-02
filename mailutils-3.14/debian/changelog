@@ -1,0 +1,1893 @@
+mailutils (1:3.14-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Update copyright years and add copyright info for the debian/ dir.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 12 Jan 2022 12:29:53 +0100
+
+mailutils (1:3.13-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Update Standards-Version to 4.6.0, with no changes needed.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 02 Sep 2021 01:32:27 +0200
+
+mailutils (1:3.12-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Remove all patches that were cherry-picked from post 3.11.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 06 Aug 2021 01:02:47 +0200
+
+mailutils (1:3.11.1-5) unstable; urgency=medium
+
+  * Enable PostgreSQL support now that OpenSSL is considered a system
+    library by Debian ftpmaster.
+  * Add upstream patch to fix expunging of mboxes on read-only directories
+    (like Debian's /var/mail). Thanks to Pierrick Chanteux for the analysis
+    (closes: #980042).
+  * Add patch to fix PostgreSQL include dir.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 09 Feb 2021 16:17:12 +0100
+
+mailutils (1:3.11.1-4) unstable; urgency=medium
+
+  * Pass -k to make check, so test failures don't halt the build, in
+    order to detect additional failures later in the testsuite.
+  * Add patch from Rob Browning to switch to guile-3.0 (closes: #969675).
+  * Add additional upstream patches to fix testsuite failures.
+  * Upload to unstable.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 13 Jan 2021 00:14:25 +0100
+
+mailutils (1:3.11.1-3) experimental; urgency=medium
+
+  * Add additional git patches to fix strout test and other testsuite
+    problems.
+  * Cherry-pick git patch to fix selection of the default smtp port.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 12 Jan 2021 00:29:14 +0100
+
+mailutils (1:3.11.1-2) unstable; urgency=medium
+
+  * Add upstream patch to limit strout test to 30 seconds.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 11 Jan 2021 13:31:16 +0100
+
+mailutils (1:3.11.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Drop obsolete mailutils.TODO.
+  * Upload to unstable after going through NEW.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 11 Jan 2021 09:38:59 +0100
+
+mailutils (1:3.11-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Drop patches that are included in 3.11.
+  * Adapt packaging for libmailutils soname bump.
+  * Update to Standards-Version 4.5.1, with no changes needed.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 05 Jan 2021 17:03:11 +0100
+
+mailutils (1:3.10-3) unstable; urgency=medium
+
+  * Actually release to unstable... 🤦
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 30 Aug 2020 12:50:10 +0200
+
+mailutils (1:3.10-2) experimental; urgency=medium
+
+  * Drop Conflicts/Replaces for older versions of libs for libmailutisX
+    and libmu-dbmX, to make different versions of the lib coinstallable.
+  * Relax de mailutils-common dependency to >= to also make this possible.
+  * Add header to MU_SIEVE_MODDIR patch.
+  * Add libtests_fail.patch: add mbdel.at from git to fix testsuite.
+  * Release to unstable after transit through NEW.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 29 Aug 2020 23:50:40 +0200
+
+mailutils (1:3.10-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Adapt packaging for libmailutils soname bump. Let libmu not
+    depend anymore on libmu-dbm, making deps for libmu-dbm only
+    affect mailtils-mda and the imap4/pop3 servers (closes: #963852).
+  * Drop all patches from previous NMUs, all are included in 3.10.
+  * Pull post-3.10 patch from upstream git to fix build.
+  * Add new tool decodemail to mailutils binary.
+  * Do not override definition of libexecdir.
+  * Define MU_SIEVE_MODDIR to ${libdir}/mailutils7 to make
+    libmailutilsX packages coinstallable (closes: #944306).
+  * Add patch to make MU_SIEVE_MODDIR configurable.
+  * Drop definitions for PYTHON AND PYTHON_CONFIG, now uneeded.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 17 Aug 2020 22:42:31 +0200
+
+mailutils (1:3.9-3.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * debian/patches: Apply upstream patch to fix build with GCC 10 (Closes:
+    #957517)
+
+ -- Sebastian Ramacher <sramacher@debian.org>  Mon, 27 Jul 2020 10:32:44 +0200
+
+mailutils (1:3.9-3.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix build error when python 2 is installed.
+  * Bump libmu-dbm6 Breaks/Replaces to (<< 1:3.8-1), since 1:3.8-1 was the
+    first version with split-out libmu-dbm6. Closes: #963211
+
+ -- Andreas Metzler <ametzler@debian.org>  Sat, 27 Jun 2020 13:59:09 +0200
+
+mailutils (1:3.9-3) unstable; urgency=medium
+
+  * Bump Breaks/Replaces for libmu-dbm6 to 1:3.7-2.1 (closes: #963211).
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 22 Jun 2020 21:09:21 +0200
+
+mailutils (1:3.9-2) unstable; urgency=medium
+
+  * Make libmailutils6 depend on libmu-dbm6 for now, until there next
+    libmailutils soname bump, to avoid breaking the current ABI.
+  * Update Standards-Version to 4.5.0.
+  * Switch to Debhelper compat v13.
+  * Get rid of non-installed files like *.la or *.pyc in dh_auto_install.
+  * Upload to unstable.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 14 Jun 2020 02:37:22 +0200
+
+mailutils (1:3.9-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Add upstream metadata file with info regarding the upstream bug database,
+    repository and security contact.
+  * Update python3.8.patch to fix a bug in upstream fix.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 22 Mar 2020 23:30:52 +0100
+
+mailutils (1:3.8-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Split out libmu_dbm into its own package. This is to allow us to compile
+    in support for all useful dbm types that are supported, but not have
+    mailutils pull all of them in.
+  * Do the same for maildag (the Mailutils MDA).
+  * Adapt packaging for the split of maidag into mda, lmtpd and putmail.
+  * Add patch to fix build with Python 3.8 (closes: #953550).
+  * Make imap4d and pop3 Suggest: mailutils-mda.
+  * Add support for Berkeley DB and GDBM to libmu-dbm.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 22 Mar 2020 22:30:43 +0100
+
+mailutils (1:3.7-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Call python3-config with --embed to fix FTBFS (Closes: #953550).
+    Patch by Matthias Klose <doko@ubuntu.com> taken from ubuntu.
+
+ -- Ivo De Decker <ivodd@debian.org>  Fri, 20 Mar 2020 14:12:10 +0000
+
+mailutils (1:3.7-2) unstable; urgency=medium
+
+  * Add missing Break+Replaces to handle the new location of files
+    from mailutils-doc with the switch to the dh sequencer and v12.
+    Thanks, Andreas Beckmann (closes: #943843).
+  * Source-only upload, after going through NEW (closes: #943787).
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 31 Oct 2019 09:44:14 +0100
+
+mailutils (1:3.7-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Declare debian-branch, upstream-branch and upstream-vcs-tag in
+    gbp.conf.
+  * Reimport Sergey's PGP key in minimal form.
+  * Drop python3 patch, included in upstream version.
+  * Drop dbgsym migration path.
+  * Add libmu_dotmail to shlibs.
+  * Rewrite rules using dh sequencer.
+  * Switch to debhelper compat v12.
+  * Pass --no-as-needed to ld to avoid missing deps in python libs.
+  * Update mailutils.lintian-overrides.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 23 Oct 2019 02:02:04 +0200
+
+mailutils (1:3.6-2) unstable; urgency=medium
+
+  * Switch to Python3 (closes: #849721, #936982).
+  * Backport patch from upstream git to fix compilation using python3.
+  * Avoid capitalising short descriptions (thanks, Laura Arjona,
+    closes: #821028).
+  * Update Standards-Version to 4.4.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 22 Oct 2019 16:38:05 +0200
+
+mailutils (1:3.6-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Add B-D on libunistring-dev, for imap4d's SEARCH CHARSET command.
+  * Rename libmailutils5 to libmailutils6, after soname bump.
+  * Add systemd service files for comsatd, imap4d and pop3d.
+  * Remove postinst and prerm scripts to install inetd entries for these
+    daemons. Drop dependencies on update-inetd.
+  * Remove unused init scripts.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 28 Feb 2019 10:29:10 +0100
+
+mailutils (1:3.5-2) unstable; urgency=medium
+
+  * Relax the dependency on a MTA to a recommendation.
+    Thanks for the suggestion, Josh Triplett (closes: #916992).
+  * Mark mailutils-doc as MA: foreign.
+  * Update Standards-Version to 4.3.0, with no changes required.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 06 Jan 2019 23:35:44 +0100
+
+mailutils (1:3.5-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Build with Guile 2.2.
+  * Remove mimeview_lexer_format-security.patch, fixed upstream.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 02 Nov 2018 01:19:29 +0100
+
+mailutils (1:3.4-2) unstable; urgency=medium
+
+  [ Jordi Mallach ]
+  * Update Vcs-* fields for migration to salsa.debian.org.
+  * Set libexecdir to ${prefix}/lib/$(DEB_HOST_MULTIARCH).
+  * Move mailutils binary to libmailutils-dev and install auxiliary
+    mailutils binaries from libexecdir. Thanks to Sergey Poznyakoff for
+    the detailed bug report and suggested fix (closes: #904366).
+  * Add Breaks/Replaces to handle libmailutils-dev upgrades.
+  * Set Rules-Requires-Root to no.
+  * Update Standards-Version to 4.2.1.
+
+  [ Ondřej Nový ]
+  * d/changelog: Remove trailing whitespaces
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 17 Oct 2018 01:37:28 +0200
+
+mailutils (1:3.4-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 07 Nov 2017 22:06:00 +0100
+
+mailutils (1:3.3-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Make mailutils-guile depend on the non-virtual guile-2.0 as first option.
+  * Add explicit --with-guile to configure as the build should fail if guile
+    support is left out.
+  * Remove all patches, all are obsolete with the new upstream.
+  * Add patch to fix a -Wformat-security FTBFS in mimeview/lexer.l.
+  * Remove all references to sieve2scm, which has removed upstream.
+  * Use HTTPS URLs in manpages, copyright file and watch.
+  * Update Standards-Version to 4.1.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 27 Oct 2017 00:39:41 +0200
+
+mailutils (1:3.2-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Oops, correct Vcs-Svn to read Vcs-Git instead.
+  * Drop tokyocabinet_dependencies.patch, guile_bindir.patch, readline.patch,
+    10_guile-snarf-CPP.patch, sieve2scm_help_output.patch, hurd.patch: all
+    merged upstream.
+  * Update texinfo_fixes.patch, part of it has been merged upstream too.
+  * Add mu_assoc_ref_fix.patch: Remove a stray call to mu_assoc_ref.
+  * Add imap4d_list_format-security.patch: fix a build failure when building
+    with -Werror=format-security.
+  * Add missing Build-Dependency on dh-python.
+  * Update shlibs.
+  * Remove obsolete configure flag and associated comment in README.Debian.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 11 Sep 2017 01:50:56 +0200
+
+mailutils (1:3.1.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Drop libmailutils_format-security_ftbfs.patch: merged upstream.
+  * Point watch file to ftp.gnu.org, to track stable releases.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 25 Dec 2016 03:01:44 +0100
+
+mailutils (1:3.0-1) unstable; urgency=medium
+
+  * New upstream stable release.
+  * Acknowledge 2.99.99-1.1 NMU.
+  * Add debian/gbp.conf to set pristine-tar = true.
+  * Update Vcs-* URLs after a svn → git migration and moving to collab-maint.
+  * Update packaging for soname bump to libmailutils5.
+  * Drop fix_linking.patch, obsolete.
+  * Refresh gettext_update.patch, with the result of a gettextize -f call.
+  * Update libmysqlclient-dev dependencies to default-libmysqlclient-dev
+    (closes: #845873).
+  * Bump Standards-Version to 3.9.8.
+  * Update to debhelper compat v10, and drop explicit Build-Deps on autopoint
+    and dh-autoreconf.
+  * Do not cleanup testsuite/testsuite on clean anymore.
+  * Add libmailutils_format-security_ftbfs.patch: fix a build failure caused
+    by a format string error when using -Wformat-security.
+  * Drop all obsolete Conflicts and Replaces.
+  * Fix whatis entries for mailutils and mailutils-config.
+  * Drop mailutils-dbg and ensure an automatic migration to -dbgsym by
+    passing --dbgsym-migration to dh_strip.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 12 Dec 2016 10:48:42 +0100
+
+mailutils (1:2.99.99-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add patch from James Clarke to fix build on hurd-i386.  Closes: #828904
+
+ -- Mattia Rizzolo <mattia@debian.org>  Tue, 09 Aug 2016 13:28:51 +0000
+
+mailutils (1:2.99.99-1) unstable; urgency=medium
+
+  * New upstream release.
+    - Replaces obsolete GnuTLS code with defaults, fixing FTBFS and
+      usage of unsafe protocols and cyphers (closes: #812848)
+  * Refresh debian/patches/texinfo_fixes.patch.
+  * Drop pop3d_auth_crash.patch, fixed upstream.
+  * Add gettext_update.patch, to workaround gettext infrastructure mismatch.
+  * Add fix_linking.patch: from git, fix linking of libmuaux.
+  * Update shlibs for libmailutils4.
+  * Install libmu_argp.so.4 (closes: #789149).
+  * mu-tool has been renamed to mailutils. Update accordingly.
+  * Generate a mailutils-config(1) manpage.
+  * Add signature check support to watch, and bump to version 4.
+  * Add Sergey's GnuPG public key to debian/upstream/signing-key.asc.
+  * Make Vcs-Browser field use https (lintian).
+  * Add guile as an alternate dependency to guile-2.0.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 01 Feb 2016 10:44:14 +0100
+
+mailutils (1:2.99.98-2) unstable; urgency=low
+
+  * Ack NMU's, thanks! (Closes: #759359)
+  * Remove Luk Claes from Uploaders, on request (closes: #723604).
+  * Bump hardcoded guile dependency to 2.0, (gràcies Aleix! closes: #724272).
+  * Rename fix-authentication.patch to pop3d_auth_crash.patch.
+  * Convert libmailutils4 to Multi-Arch.
+  * Fix filename typo in copyright.
+  * Bump to Standards-Version 3.9.6.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 08 Oct 2014 00:16:52 +0200
+
+mailutils (1:2.99.98-1.4) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * 10_guile-snarf-CPP.diff: Fix FTBFS on *ix86 caused by #759096 (guile-snarf
+    hard-codes the at-build-time-default-compiler) by explicitely adding
+    CPP="@CPP@" to guile-snarf's run-time environment.
+
+ -- Andreas Metzler <ametzler@debian.org>  Tue, 26 Aug 2014 19:34:36 +0200
+
+mailutils (1:2.99.98-1.3) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Switch (build-)depends from libgnutls-dev to libgnutls28-dev.
+    Closes: #753129
+
+ -- Andreas Metzler <ametzler@debian.org>  Fri, 15 Aug 2014 16:35:09 +0200
+
+mailutils (1:2.99.98-1.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * debian/patches/readline.patch: Fix build issues with recent versions of
+    readline. (Closes: #741838)
+
+ -- Sebastian Ramacher <sramacher@debian.org>  Fri, 25 Apr 2014 19:28:29 +0200
+
+mailutils (1:2.99.98-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Add patch by Steve M. Robbins to fix a crash upon authentication.
+    (Closes: #720060)
+
+ -- Philipp Kern <pkern@debian.org>  Fri, 22 Nov 2013 20:09:51 +0100
+
+mailutils (1:2.99.98-1) unstable; urgency=low
+
+  * New upstream release.
+  * Bump shlibs to 1:2.99.98.
+  * Drop disable_am_gnu_radius.patch, lber_ldadd.patch, spelling_fixes.patch
+    and mu-remove_conflicting.patch, all fixed upstream or obsoleted.
+  * Add texinfo_fixes.patch: fix a few texinfo syntax errors that are now
+    fatal with texinfo 5.x (closes: #713327).
+  * Switch from GDBM to Kyoto Cabinet (closes: #714788).
+  * Add tokyocabinet_dependencies.patch: don't force -lbz2 -lgz -lrt
+    dependencies when building kyotocabinet support.
+  * Switch to Guile 2.0.
+  * Add guile_bindir.patch: don't assume the pkg-config file defines bindir.
+    Add a hack to append /bin to Guile's prefix.
+  * Enable dh_autoreconf.
+  * Switch watch url to alpha.gnu.org.
+  * Explicitly enable python support.
+  * Unset X-Python-Version.
+  * Update Standards-Version to 3.9.4, with no changes needed.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 03 Jul 2013 09:09:42 +0200
+
+mailutils (1:2.99.97-3) unstable; urgency=low
+
+  * Both maildir-utils and mailutils ship a “mu” binary, two completely
+    different programs for different purposes. As maildir-utils has been
+    around in Debian for years, rename ours to “mu-tool” (closes: #678484).
+  * Document the above change in README.Debian.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 22 Jun 2012 19:47:45 +0200
+
+mailutils (1:2.99.97-2) unstable; urgency=low
+
+  * Upload to unstable.
+  * Drop libmu_nntp and libmu_cpp from .shlibs: these interfaces
+    won't be available until 3.0.
+  * Drop version mangling from watch file, and look for .xz tarballs.
+  * Set DEFAULT_CUPS_CONFDIR=/usr/share/cups/mime when configuring, so
+    mimeview can find the CUPS mime.types file it expects
+    (closes: #435496, #666041).
+  * Disable spelling_fixes.patch: it is very nice, but I prefer working
+    tests (which expect “messsages”).
+  * This version of GNU mail does not crash when root uses a .mailrc file
+    (closes: #510949).
+  * Add set sendmail=/usr/sbin/sendmail to the default mail.rc, to work
+    around some daemons not installing the /usr/lib/sendmail compatibility
+    symlink (closes: #440603).
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 21 Jun 2012 14:52:02 +0200
+
+mailutils (1:2.99.97-1) experimental; urgency=low
+
+  * New upstream beta release.
+    - guimb is reimplemented, and should now work (closes: #602665).
+    - mail no longer ignores last line of stdin if it lacks a newline
+      (closes: #526706).
+    - mailutils-config is replaced in favour of “mu” (closes: #301962).
+  * We're back into using the pristine upstream tarball, as the texinfo
+    manual no longer has Front or Back-Covers texts, nor Invariant
+    Sections, and the RFC documents are gone from the distribution. Thanks
+    a lot for this Sergey!
+  * Drop get-orig-source target from rules. It's not needed anymore as
+    we're back to pristine tarballs.
+  * Rewrite copyright file in machine-readable format 1.0 and add a
+    section for GFDL-NIV material.
+  * Mailutils has changed a lot in this release. Accommodate packaging
+    files for new libs and sonames, old programs and modules dropped,
+    and new programs added.
+  * Refresh disable_am_gnu_radius.patch and lber_ldadd.patch, but keep
+    them disabled.
+  * Rename sieve.scm_help_output.patch to sieve2scm_help_output.patch, and
+    refresh.
+  * Remove all other patches: all obsolete or applied upstream.
+  * Add spelling_fixes.patch to fix a typo in imap4d.
+  * Add mu-remove_conflicting.patch to fix conflicting declarations.
+  * Get rid of testsuite/testsuite script on clean.
+  * Remove debian/source/options: use Debian's standard compression.
+  * Pass --disable-cxx for now, as the C++ extension does not build.
+  * Pass --disable-static and drop .a files.
+  * Disable NNTP support as it's still not ported to libmailutils4.
+  * Stop setting $HOME. The rewrite of the testsuite using autotest should
+    help the problems with DejaGNU.
+  * Bring mailutils-doc back and ship the Mailutils texinfo manual in it.
+  * Build html documentation.
+  * Register the Mailutils manual with doc-base.
+  * Add debugging symbols to a new mailutils-dbg package.
+  * Move locale data to a new mailutils-common package.
+  * Enable hardening flags; Build-Depend on dpkg-dev >= (1.16.1) for
+    buildflags.mk.
+  * Disable building of scheme-based program manpages, as their execution
+    fails before make install.
+  * Drop mailutils-config's manpage. It's deprecated and its help output
+    is no longer help2man compatible.
+  * Update help2man include to point to the mailutils-doc package.
+  * Make testsuite non-fatal while we stay in experimental.
+  * Make libmailutils-dev depend on all referenced -dev packages.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 11 Jun 2012 02:55:11 +0200
+
+mailutils (1:2.2+dfsg1-6) unstable; urgency=low
+
+  * Build-Depend on libltdl-dev, not libltdl3-dev.
+  * Complete half-baked dh_python2 migration (closes: #662218).
+  * Drop dpkg-source options file, to use the standard compression for
+    debian tar.
+  * Pass --list-missing to dh_install.
+  * Stop installing an empty modules dir.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 12 Apr 2012 23:46:16 +0200
+
+mailutils (1:2.2+dfsg1-5) unstable; urgency=low
+
+  * types_pkginclude_HEADERS.patch: Move types.h from pkginclude_DATA to
+    _HEADERS to fix an autoreconf error with new automake versions
+    (closes: #661813).
+  * Move to debhelper v9.
+  * Migrate to dh_python2.
+  * Bump Standards-Version to 3.9.3.
+  * Run wrap-and-sort on the source package.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 01 Mar 2012 23:04:54 +0100
+
+mailutils (1:2.2+dfsg1-4) unstable; urgency=low
+
+  * Apply patch from Jakub Wilk to add a missing -llber to MU_AUTHLIBS.
+    This had caused a FTBFS with binutils-gold at some point, but not at
+    the moment (closes: #555585).
+  * Build-Depend and include dh-autoreconf, to regenerate the build
+    system after the above change. Additionally, Build-Depend on autopoint.
+  * Backport patch from Simon Josefsson to avoid using GnuTLS deprecated
+    functions (closes: #624029).
+  * Apply patch from Nicolas Dandrimont to fix a FTBFS with
+    -Werror=format-security. Additionally, add another patch from Nicolas
+    to refresh mh/mh_fmtgram.c, from the fixed bison source
+    (closes: #643440).
+  * Apply patch from Sam Rodgers to relax permission checks on SSL keys,
+    which may be group-readable in Debian, for the ssl-cert group
+    (closes: #630007).
+  * Bump Standards-Version to 3.9.2, after checking that GNU Mail
+    implements the POSIX-required interface for mailx.
+  * Replace versioned conflicts on other packages providing mailx with
+    Breaks.
+  * Add a versioned Breaks to heirloom-mailx for the versions previous to
+    the introduction of alternatives for mailx.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 29 Sep 2011 00:36:41 +0200
+
+mailutils (1:2.2+dfsg1-3) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 12 Feb 2011 21:15:33 +0100
+
+mailutils (1:2.2+dfsg1-2) experimental; urgency=low
+
+  * Apply patch remove_MAXHOSTNAMELEN.diff from the patches-2.2 branch,
+    in an attempt to fix build issues on the Hurd.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 05 Oct 2010 18:51:29 +0200
+
+mailutils (1:2.2+dfsg1-1) experimental; urgency=low
+
+  * New upstream release.
+    - Remove ia64_include_setjmp.diff, spelling_fixes.diff,
+      program_descriptions.diff, mh_repl_folder.diff, fetch_64.diff,
+      readmsg_command_line_segfaults.diff, mips_weak_symbols.diff,
+      mailbox_lexer_parse_regular_files.diff: obsolete with new version.
+  * Update watch file to prefer bzip2-compressed files.
+  * Adapt get-orig-source rule for new tar filename and for the
+    absence of RFC docs in the upstream tarball.
+  * Use bzip2 for the debian tar.
+  * Add mailutils.scm.diff, to fix non-generated variables during the
+    build of mailutils.scm.
+  * Add DEP-3 descriptions to all patches.
+  * Fix get-orig-source awk expression so it works with mawk again.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 14 Sep 2010 12:40:33 +0200
+
+mailutils (1:2.1+dfsg1-7) unstable; urgency=low
+
+  * Fix mangen.sh to generate an appropriate description for mail
+    after the program name change in the previous upload.
+  * Remove hunks of program descriptions.patch which just removed the
+    trailing dot from the doc strings. Upstream went the other way long
+    ago -- adding the dots wherever they were missing.
+  * Add mh_repl_folder.diff, stolen from Git: set MU folder directory to
+    mh_get_dir (fixes a bug found by Peter S. Galbraith).
+  * Bump Standards-Version to 3.9.0 (no changes needed).
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 13 Sep 2010 19:54:54 +0200
+
+mailutils (1:2.1+dfsg1-6) unstable; urgency=medium
+
+  * Follow Steve Langasek's suggestion in #555495 and make default-mta the
+    preferred mail-transport-agent alternative, instead of exim4.
+  * Add mailbox_lexer_parse_regular_files.diff, stolen from Git, to make
+    mail work when ~/.mail exists as a directory (thanks Daniel Kahn Gillmor;
+    closes: #543544).
+  * Install mail as mail.mailutils and register alternatives for
+    /usr/bin/mail, so the binary can co-exist with the already present
+    alternative provided by bsd-mailx and heirloom-mailx (closes: #577738).
+  * Include the c_api.so in python-mailutils, otherwise it's completely
+    useless. Thanks Wojciech Polak for spotting this. NB: this change
+    temporarily makes python-mailutils support python 2.5 only. This
+    should be fixed for the next upload.
+  * Make the Vcs-Svn and Vcs-Browser control fields point to trunk.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 19 Apr 2010 01:11:38 +0200
+
+mailutils (1:2.1+dfsg1-5) unstable; urgency=low
+
+  * Add a missing comma in mailutils' description (closes: #562589).
+  * Conflict with bsdmainutils (<< 8.0.6) to ensure from is correctly
+    registered with update-alternatives (see #565530 and #565596).
+  * Special case "mail" and "comsatd" during manpage generation as their
+    slightly different usage output breaks automatic detection of whatis
+    info.
+  * Remove old postinst code for rare sarge upgrade conditions.
+  * Remove mailutils.preinst, which only holds code from 2002 to remove
+    leftover elm+ diversions.
+  * Generate a manpage for sieve.scm. The following changes are needed:
+    - Set $GUILE_LOAD_PATH to the package's installdir
+    - Temporarily modify the hardcoded mailutils libs path in mailutils.scm
+      so sieve.scm can open them.
+    - Introduce sieve.scm_help_output.diff to modify sieve.scm's --help
+      output in order to make help2man happy.
+  * Add a note to all manpages explaining their origin, and that bugs
+    concerning their contents should not be sent upstream.
+  * Fix the python install path to include "*-packages" so it works with
+    python2.6 (closes: #571497).
+  * Comment out the AM_GNU_RADIUS check from configure.ac, as the m4 is
+    not available in the tarball nor in any current Debian package. Thanks
+    to Kamal Mostafa, for the patch applied in Ubuntu (closes: #568484).
+  * Switch to DpkgSource version 3.0 (quilt). Remove include for CDBS' quilt
+    rules, README.source and quilt Build-Dependency.
+  * Refresh patches.
+  * Add a Lintian override for Mailutils MH binary directory. We want to be
+    co-installable with MH-E, so for now we use another directory.
+  * Bump Standards-Version to 3.8.4, no changes needed.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 28 Feb 2010 20:59:12 +0100
+
+mailutils (1:2.1+dfsg1-4) unstable; urgency=low
+
+  * Fix lenny upgrades of mailutils-mh by adding missing replaces,
+    (thanks Nikolaus Schulz, closes: #564882).
+  * Fix Lintian override for dotlock's setgid binary.
+  * Remove Suggests to mailutils-doc, which is long gone.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 16 Jan 2010 10:57:44 +0100
+
+mailutils (1:2.1+dfsg1-3) unstable; urgency=medium
+
+  * Add spelling_fixes.diff, to fix a pair of spelling fixes in MH and
+    maidag.
+  * Add ia64_include_setjmp.diff, to fix a FTBFS on ia64 (closes: #554592).
+  * Add fetch_64.diff, to fix a testsuite error on amd64 by changing some
+    format specifiers and variable types (thanks Sergey Poznyakoff,
+    closes: #552964).
+  * Add a lintian override for docklock's setgid bit.
+  * Don't ship a default mail.rc, as bsd-mailx is already shipping
+    /etc/mail.rc and this causes a file conflict. Instead, distribute it as
+    an example in the package documentation (closes: #553040).
+  * Move guile examples to mailutils-guile.
+  * Add a missing alternative for from (Thanks Tomas Cassidy, LP 444138).
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 16 Dec 2009 15:01:02 +0100
+
+mailutils (1:2.1+dfsg1-2) unstable; urgency=low
+
+  * Correct dependency on libmailutils-dev for mailutils-guile.
+  * Build-Depend on guile-1.8 (>= 1.8.7+1-1.1), which has transitioned
+    to readline6, to fix builds in buildds.
+  * Use gawk in the get-orig-source target; as this isn't used during the
+    build, we're not adding build deps, although it currently does not work
+    with mawk.
+  * Drop .la files from libmailutils-dev.
+  * Add readmsg_command_line_segfaults.diff by Steve Cotton to fix a
+    segfault in readmsg when using the -a and -p options (closes: #517457).
+    Thanks!
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 28 Oct 2009 13:55:24 +0100
+
+mailutils (1:2.1+dfsg1-1) unstable; urgency=low
+
+  [ Clint Adams ]
+  * Bump to Standards-Version 3.8.3.
+  * Remove myself from Uploaders.
+
+  [ Jordi Mallach ]
+  * New upstream release (closes: #548203).
+  * Remove Jeff Bailey from Uploaders, with his consent.
+  * Add a get-orig-source target to retrieve and cleanup a tarball
+    without the non-free bits (rfc and texinfo docs).
+  * Generate a new mailutils-guile package to ship the .scm files, and make
+    it depend on libmailutils2-dev. Move note from libmailutils2.README.Debian
+    to mailutils-guile.README.Debian to explain why the dep is needed
+    (closes: #403537).
+  * Move guimb and sieve.scm to mailutils-guile.
+  * Move mh .el script and helper files to mailutils-mh.
+  * Replace libmysqlclient15-dev with libmysqlclient-dev in Build-Depends.
+  * Replace libreadline5-dev with libreadline-dev.
+  * Require guile-1.8-dev on all architectures, ia64 seems finally ready.
+  * Add python-dev to Build-Depends.
+  * Install python extensions to new package python-mailutils.
+  * Drop libidn11-dev from Build-Depends. Nothing appears to use it anymore.
+  * Adapt for some sub-library changes.
+  * Update shlibs.
+  * Drop Conflicts on libsieve2-1, there are no more fileclashes.
+  * Handle that --enable-mh-utils is now --enable-mh.
+  * Add ${misc:Depends} to all packages.
+  * Move to debhelper compat level 7.
+  * Add a README.source with a pointer to the quilt docs.
+  * Remove alignment patch, fixed upstream.
+  * Remove mail_doc_prefix patch, changes in upstream code have obsoleted it.
+  * Remove unused remove_nonfree_docs patch.
+  * Generate maidag manpage.
+  * Stop generating mail.local and mail.remote mailpages. These two programs
+    have been superseded by maidag.
+  * Add an alternative for mailx, pointing to /usr/bin/mail, and remove
+    the old static links. Replace the mailx conflict with a conflict on
+    just heirloom-mailx, which also installs alternatives for /usr/bin/mail.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 17 Oct 2009 17:29:42 +0200
+
+mailutils (1:2.0+dfsg1-4) unstable; urgency=high
+
+  * Fix redefined weak symbol to avoid FTBFS on mips (Closes: #516632).
+
+ -- Luk Claes <luk@debian.org>  Sat, 11 Jul 2009 10:05:23 +0200
+
+mailutils (1:2.0+dfsg1-3) unstable; urgency=low
+
+  * Fix alignment by updating ASSOC_ELEM_SIZE (Closes: #516507, #534980).
+
+ -- Luk Claes <luk@debian.org>  Thu, 02 Jul 2009 08:03:48 +0200
+
+mailutils (1:2.0+dfsg1-2) unstable; urgency=low
+
+  * Fix plugin install rules to avoid installing files to both
+    libmailutils2 and mailutils, making the package installable
+    again (closes: #516541).
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 27 Feb 2009 15:21:08 +0100
+
+mailutils (1:2.0+dfsg1-1) unstable; urgency=low
+
+  [ Jordi Mallach ]
+  * New upstream release.
+  * Add libwrap0-dev to Build-Depends to enable tcp-wrappers support.
+  * Add libldap2-dev to Build-Depends to enable LDAP authentication support.
+  * Add texinfo to Build-Depends as libmu_scm needs it during the build.
+  * Add avoid_cp_during_testsuite.diff in an attempt to resolve the
+    testsuite errors. The problem was caused by modern versions of
+    coreutils's cp closing stdin when exiting, something that made the
+    DejaGnu tests fail (closes: #461998).
+    Big thanks to Simon Josefsson and Sergey Poznyakoff for finally tracking
+    down this ugly bug.
+  * Re-enable the testsuite.
+  * Rename and adapt some older patches to avoid using quilt options that
+    would break dpkg's new quilt source format.
+  * Soname has bumped, rename and adjust things accordingly to libmailutils2.
+  * Add new programs maildag and sieve.scm to mailutils.
+  * Add mailutils modules to libmailutils2.
+  * Add mailutils.m4 to libmailutils-dev.
+  * Update libmailutils2.shlibs with newly introduced MU libs.
+  * Add Luk Claes to Uploaders.
+  * Minor fixes to mailutils.README.Debian.
+
+  [ Clint Adams ]
+  * Add watch file.
+  * Bump to Standards-Version 3.8.0.
+  * Drop debian/patches/fr_po_typo_fix.diff (merged upstream).
+  * Remove debian/patches/avoid_cp_during_testsuite.diff (merged
+    upstream).
+
+ -- Clint Adams <schizo@debian.org>  Sun, 08 Feb 2009 15:02:05 -0500
+
+mailutils (1:1.2+dfsg1-4) unstable; urgency=low
+
+  * Avoid Build-Depending on a virtual package alternative, using
+    "guile-1.8-dev [!ia64], guile-1.6-dev [ia64]", as sbuild will only
+    consider the first alternative.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 01 Aug 2008 00:16:54 +0200
+
+mailutils (1:1.2+dfsg1-3) unstable; urgency=medium
+
+  * Add libguile-dev as a Build-Depend alternative to guile-1.8-dev, which
+    isn't available on ia64. Thanks Luk Claes.
+  * Add ${shlibs:Depends} to libmailutils1-dev.
+  * Wrap Build-Depends.
+  * Add Vcs-Svn, Vcs-Browser and Homepage control fields.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 31 Jul 2008 01:30:11 +0200
+
+mailutils (1:1.2+dfsg1-2) unstable; urgency=medium
+
+  * Disable testsuite, as it now fails on all architectures, although it
+    worked correctly months ago (closes: #461998, #471759, #489112).
+  * Add necessary conflicts with libsieve2-1 and libsieve2-dev, a better
+    fix (hopefully not involving package splitting as this was rejected by
+    ftpmaster time ago) should be found post lenny (closes: #411070).
+  * Rebuilding will remove the old gnutls13 dependency (closes: #491481).
+  * Fix DEB_SHLIBDEPS_INCLUDE to look in the correct lib directory.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 28 Jul 2008 13:40:27 +0200
+
+mailutils (1:1.2+dfsg1-1) unstable; urgency=low
+
+  [ Jordi Mallach ]
+  * New upstream release.
+  * debian/copyright: updated. GNU mailutils is now licensed under the terms
+    of the GNU GPL version 3.
+  * debian/libmailutils1.shlibs: bump to 1.2, as new symbols have been added.
+  * debian/rules: support 'nocheck' (to skip testsuite) in DEB_BUILD_OPTIONS
+    as inspired by Michael Banck in #380383.
+
+  [ Clint Adams ]
+  * Bump to Standards-Version 3.7.3
+  * Add myself to Uploaders.
+  * Switch from simple-patchsys to quilt.
+  * Change ${Source:Version} to ${binary:Version} for libmailutils-dev.
+  * Fix typo in French translation, thanks to Arthur Petitpierre.
+    closes: #440300.
+  * Add dependency on update-inetd for mailutils-comsatd, mailutils-pop3d,
+    mailutils-imap4d.
+
+ -- Clint Adams <schizo@debian.org>  Fri, 18 Jan 2008 21:27:35 -0500
+
+mailutils (1:1.1+dfsg1-3.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Fix issue with mails containing \0. Thanks to Ben Hutchings for
+    the patch. Closes: #361354
+
+ -- Andreas Barth <aba@not.so.argh.org>  Mon,  4 Dec 2006 11:21:05 +0000
+
+mailutils (1:1.1+dfsg1-3) unstable; urgency=medium
+
+  * debian/control: switch back to guile-1.6 as guile-1.8 is not yet ready
+    on a number of architectures.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 13 Nov 2006 14:40:43 +0100
+
+mailutils (1:1.1+dfsg1-2) unstable; urgency=medium
+
+  [ Jordi Mallach ]
+  * debian/mangen.inc: add a newline before the URL so it's not wrapped
+    in standard-size terminals.
+  * debian/rules: install upstream changelog in all packages; other common
+    docs in mailutils.
+  * debian/control: switch to guile-1.8-dev.
+
+  [ Steve Langasek ]
+  * debian/rules: don't rely on $HOME pointing anywhere useful -- point it
+    instead at a local directory for the testsuite.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 13 Nov 2006 01:03:57 +0100
+
+mailutils (1:1.1+dfsg1-1) unstable; urgency=medium
+
+  * New upstream release.
+    - imap4d should act correctly when two clients access and modify a
+      mailbox in parallel, not causing mailbox corruption
+      (closes: #350754).
+  * The source tarball has been trimmed of non-free elements:
+    - the GNU mailutils texinfo documentation under the GNU FDL with Cover
+      and Backcover texts.
+    - the rfc documentation (closes: #393396).
+  * debian/control:
+    - add libltdl3-dev to Build-Depends.
+    - remove no longer needed bzip2 Build-Depends.
+    - as we now lack texinfo docs, drop Build-Depends on texinfo, texi2html.
+    - mention the lack of PostgreSQL support due to OpenSSL vs. GPL
+      incompatibilities in mailutils and libmailutils1 README.Debian
+      (closes: #391031)
+    - get rid of mailutils-doc, the remaining contents have been moved
+      around the relevant packages.
+    - get rid of Build-Depend-Indep as well.
+    - adjust description to mention mimeview.
+  * debian/copyright:
+    - don't mention FDL licensed components and remove the full GNU FDL text.
+    - add pointers to common-licenses for GPL and LGPL.
+  * debian/rules: don't build html from texinfo sources.
+  * debian/mailutils-doc.*: removed, relevant stuff moved elsewhere.
+  * debian/mailutils.install: install mimeview.
+  * debian/mangen.sh:
+    - don't point at the texinfo manual in manpages.
+    - add mimeview.1 to generated manpages.
+    - add sensible manpage descriptions (closes: #368628).
+    - include mangen.inc in the generated manpages.
+  * debian/mangen.inc: point to the GNU site for the online mailutils
+    texinfo manual.
+  * debian/libmailutils1.shlibs: bump to 1.1.
+  * debian/patches/01_mail_segfault.patch: removed, fixed upstream.
+  * debian/patches/02_testsuite_8bit_output.patch: removed, partially fixed
+    upstream.
+  * debian/patches/03_mail_doc_prefix.patch: remove texinfo hunk.
+  * debian/patches/01_program_descriptions.patch: improve the program
+    description output in --help for comsatd and movemail.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 31 Oct 2006 20:24:18 +0100
+
+mailutils (1:1.0-1) unstable; urgency=low
+
+  * New upstream stable release.
+  * debian/patches/01_mail_segfault.patch: patch from CVS to fix a segfault
+    in mail (thanks Sergey Poznyakoff and Daniel Kahn; closes: #379156).
+  * debian/patches/02_testsuite_8bit_output.patch: disable parts of the
+    testsuite which assume expect can handle 8bit output as expected. Thanks
+    Sergey.
+  * debian/libmailutils-dev.doc-base, debian/libmailutils-dev.info: removed,
+    as muint.info is not longer in the distribution and has been moved to
+    mailutils.info.
+  * debian/rules (DEB_INSTALL_DOCS_mailutils-mh): don't install mh/README,
+    proper documentation now exists in mailutils.info.
+  * debian/control: make mailutils-mh suggest mailutils-doc.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 26 Jul 2006 13:09:28 +0200
+
+mailutils (1:0.6.95-1) unstable; urgency=low
+
+  * New upstream release.
+    - fixes behaviour of top-repl (closes: #369026).
+  * debian/libmailutils1.install: install mailutils.scm (closes: #373113).
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 16 May 2006 01:17:32 +0200
+
+mailutils (1:0.6.94-1) unstable; urgency=low
+
+  * New upstream prerelease.
+  * debian/patches/00_CVS_20060228.patch,
+    debian/patches/01_lib_linking.patch,
+    debian/patches/02_libsieve_version-info.patch,
+    debian/patches/99_autotools_update.patch: removed, obsolete.
+  * debian/patches/04_mail_cursor_type.patch: removed, fixed upstream.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 27 Apr 2006 08:40:07 +0200
+
+mailutils (1:0.6.93-3) unstable; urgency=low
+
+  * debian/control: mailutils depends on exim4 | mail-transport-agent
+
+ -- Jeff Bailey <jbailey@raspberryginger.com>  Mon, 27 Mar 2006 09:55:29 -0500
+
+mailutils (1:0.6.93-2) unstable; urgency=low
+
+  * debian/copyright: Update FSF's address.
+  * debian/control: Update to Standards-Version 3.6.2.1.
+  * debian/patches/04_mail_cursor_type.patch: fix conflicting declaration
+    of "cursor" (closes: #355295).
+
+ -- Jordi Mallach <jordi@debian.org>  Mon,  6 Mar 2006 11:39:56 +0100
+
+mailutils (1:0.6.93-1) unstable; urgency=medium
+
+  * New upstream prerelease.
+    - random testsuite failures don't appear to happen anymore
+      (closes: #192962).
+    - movemail won't lose email if destination device is full
+      (closes: #344420).
+    - frm won't segfault when LANG=POSIX (closes: #306892, #348464;
+      thanks Horkan Smith).
+    - movemail can write lines longer than 254 chars to IMAP correctly
+      (closes: #336555).
+  * debian/control:
+    - switch to libmysqlclient15-dev (closes: #343777) and
+      libgnutls-dev (closes: #335766).
+    - rename libmailutils0 to libmailutils1 and libmailutils0-dev to
+      libmailutils-dev.
+  * debian/rules:
+    - add CDBS utils.
+    - don't overwrite DEB_CONFIGURE_USER_FLAGS.
+  * debian/patches/00_CVS_20060228.patch: CVS update, including:
+    - fixes for improper linking of mailbox libraries
+    - fix for a frm segfault
+    - library versioning
+  * debian/patches/01_lib_linking.patch: further linking fixes for libsieve
+    and libmu_scm. libmuauth will be fixed in the next release.
+  * debian/patches/02_libsieve_version-info: correct versioning of libsieve.
+  * debian/patches/03_mail_doc_prefix.patch: Use "/usr/bin/mail" instead
+    of "/bin/mail" in runtime and texinfo documentation, as both mailutils
+    and mailx install "mail" in that directory (closes: #287892).
+  * debian/patches/99_autotools_update.patch: generated by running
+    "automake-1.9".
+  * debian/patches/01_frm_segfault.patch, 02_sql_injection.patch,
+    03_imap4d_gcc4_ftbfs.patch, 04_imap4d_ulong_max.patch,
+    05_imap4d_bad_uid.patch, 06_fribidi_ftbfs.patch,
+    07_CAN-2005-2878_imap4d_search_format_string.patch: Removed, all are now
+    obsolete, applied upstream or were taken from CVS.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  2 Mar 2006 17:56:20 +0100
+
+mailutils (1:0.6.90-3) unstable; urgency=HIGH
+
+  * debian/patches/05_imap4d_bad_uid.patch: fix the imap4d testsuite to
+    match the new non-existing UID behaviour.
+  * [SECURITY: CAN-2005-2878]
+    debian/patches/07_CAN-2005-2878_imap4d_search_format_string.patch: patch
+    from Sergey Poznyakoff to fix a format string vulnerability in
+    imap4d's SEARCH function (closes: #327424).
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 14 Sep 2005 11:33:15 +0200
+
+mailutils (1:0.6.90-2) unstable; urgency=medium
+
+  * debian/patches/01_frm_segfault.patch: patch from CVS to fix frm
+    segfaults that survived 0.6.90 (thanks Todd Lipcon, closes: #306892).
+  * debian/patches/05_imap4d_bad_uid.patch: modified patch from Bas Wijnen
+    to fix the behaviour of imap4d when fetching non-existing UIDs
+    (closes: #317842, #312245).
+  * debian/patches/06_fribidi_ftbfs.patch: patch from Matt Kraai to fix a
+    FTBFS in the Fribidi code (closes: #318200).
+  * debian/changelog: add CVE numbers to recent vulnerabilities.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 10 Aug 2005 14:02:07 +0200
+
+mailutils (1:0.6.90-1) unstable; urgency=low
+
+  * New upstream release.
+    + fixes segfaults in frm (closes: #306892, #302320).
+    + fixes segfaults in mail, when using "!".
+  * debian/control: build-depend on libfribidi-dev.
+  * debian/mailutils.install: don't install .la and .a files.
+  * debian/mail.rc: show Cc: by default (closes: #309391).
+  * debian/patches/01_mail_metamail.patch: removed, obsolete.
+  * debian/patches/04_IDEF0954_IDEF0955_IDEF0956_IDEF0957.patch: replace
+    with 04_imap4d_ulong_max.patch, to fix post 0.6.90 32-bit assumptions.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 24 May 2005 01:32:42 +0200
+
+mailutils (1:0.6.1-4) unstable; urgency=high
+
+  * debian/patches/04_IDEF0954_IDEF0955_IDEF0956_IDEF0957.patch: fix
+    IDEF0956.exp to not assume ULONG_MAX = 2^32 on 64 bit architectures
+    (closes: #310294).
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 23 May 2005 23:28:45 +0200
+
+mailutils (1:0.6.1-3) unstable; urgency=HIGH
+
+  * "Hey, I did finish that triathlon" release.
+  * [SECURITY] debian/patches/04_IDEF0954_IDEF0955_IDEF0956_IDEF0957.patch:
+    backport fixes to vulnerabilities discovered by iDEFENSE with
+    IDs IDEF0954, IDEF0955, IDEF0956 and IDEF0957 (closes: #309751).
+    - [CAN-2005-1520] format string error.
+    - [CAN-2005-1521] denial of service.
+    - [CAN-2005-1522] integer overflow.
+    - [CAN-2005-1523] potential buffer overflow.
+    Thanks to Sergey Poznyakoff.
+  * debian/changelog: insert missing changelog entry for 20011103-1.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 22 May 2005 17:13:58 +0200
+
+mailutils (1:0.6.1-2) unstable; urgency=HIGH
+
+  * debian/patches/01_mail_metamail.patch: patch from CVS to allow decoding
+    of mail without interpreting MIME parts if "metamail" is unset. Sergey
+    thinks that this is the cause for the random testsuite failures
+    (closes: #265490).
+  * [SECURITY: CAN-2005-1824] debian/patches/02_sql_injection.patch:
+    add "\" to the list of escaped characters, to fix a sql injection
+    vulnerability in the SQL authentication module (thanks, Primoz Bratanic;
+    closes: #308031).
+  * debian/patches/03_imap4d_gcc4_ftbfs.patch: patch from Andreas Jochens to
+    fix a FTBFS on amd64/gcc-4.0 (closes: #300869).
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 15 May 2005 17:35:58 +0200
+
+mailutils (1:0.6.1-1) unstable; urgency=low
+
+  * New upstream release.
+    - fixes a typo spotted by David Coe (closes: #284547).
+  * debian/control:
+    - switch to libgsasl7-dev, which brings back GSASL support.
+    - replace texi2html with texinfo, to get html docs built again,
+      as mailutils now relies on makeinfo (closes: #300190).
+    - add from to the package description.
+  * debian/mailutils.install:
+    - install bin/from, which is now a compatible replacement for
+      BSD from.
+  * debian/mangen.sh: add from.mailutils to the list of files to be
+    generated.
+  * debian/mailutils.manpages: install from.mailutils.1.
+  * debian/libmailutils0.shlibs: update for 0.6.1 (closes: #292200).
+  * debian/mailutils-doc.doc-base: update paths for html docs.
+  * debian/rules:
+    - install from as from.mailutils. Don't install alternatives for now
+      as bsdmainutils doesn't provide them yet.
+    - look for html docs in the correct path.
+  * debian/patches/01_html_doc.patch: removed, obsolete.
+  * debian/patches/02_imap4d_getline_type.patch: removed, fixed upstream.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 19 Mar 2005 05:56:07 +0100
+
+mailutils (1:0.6-2) unstable; urgency=low
+
+  * debian/patches/02_imap4d_getline_type.patch: fix FTBFS caused by
+    conflicting types for getline() (thanks, Kurt Roeckx; closes: #288103).
+
+ -- Jordi Mallach <jordi@debian.org>  Sat,  1 Jan 2005 22:15:01 +0100
+
+mailutils (1:0.6-1) unstable; urgency=medium
+
+  * The "Third time's a charm" release.
+  * New upstream release.
+  * debian/control:
+    - switch to libmysqlclient12 again, using the first version that
+      isn't linked against libssl.
+    - switch to libreadline5-dev, to solve unresolvable build-depends
+      (thanks, Bastian Blank; closes: #287928).
+  * debian/mailutils-doc.examples: update paths.
+  * debian/patches/02_filter_iconv_fix.patch: removed, included upstream.
+  * debian/patches/03_drop_option_T.patch: likewise.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 31 Dec 2004 02:22:26 +0100
+
+mailutils (1:0.5-4) unstable; urgency=HIGH
+
+  * Jordi Mallach:
+    - [SECURITY: CAN-2004-0984] debian/patches/03_drop_option_T.patch:
+      apply patch from Max Vozeler to fix a privilege escalation
+      vulnerability in mailutils' dotlock implementation.
+    - debian/rules: fix typo to install the correct docs in mailutils-mh.
+    - debian/mangen.sh: correct sbin8 manpage suffix.
+    - debian/mailutils-{comsatd,imap4d,pop3d}.manpages: fix manpage names.
+  * Jeff Bailey:
+    - debian/mailutils-pop3d.init.WIP: add pidfile support.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  4 Nov 2004 18:52:45 +0100
+
+mailutils (1:0.5-3) unstable; urgency=high
+
+  * The "OpenSSL must die" release.
+  * debian/control: revert the libmysqlclient change in the last upload.
+    The new mysql licence doesn't fix that mailutils still links to libssl
+    for imap4d and pop3d, which is a violation of mailutils licence.
+    Going back to the old libmysqlclient10 which has no OpenSSL
+    dependencies.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 30 Aug 2004 10:29:45 +0200
+
+mailutils (1:0.5-2) unstable; urgency=low
+
+  * The "I could poke jdub right now" release.
+  * debian/control:
+    + remove comsatd from the list of included utilities in the
+      mailutils package, and add frm.
+    + switch to gnutls11 (closes: #263681).
+    + switch from libmysqlclient10 to the new libmysqlclient12 with
+      Free Software licences exception.
+    + change Jeff's e-mail address to jbailey@raspberryginger.com.
+  * debian/mangen.sh: install comsatd, imap4d and pop3d manpages in the
+    correct section.
+  * debian/libmailutils0.shlibs: don't be stupid, bump all to 0.5.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 13 Aug 2004 19:06:40 +0200
+
+mailutils (1:0.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Start using officially released tarballs from now on.
+  * debian/rules:
+    + remove tarball method packaging. Remove all instances of $(SRC_DIR).
+    + remove rules to install examples.
+  * debian/mailutils-doc.examples: new, move examples from rules here.
+  * debian/libmailutils.shlibs: update shlibs for libs that need it.
+  * debian/patches/02_filter_iconv_fix.patch: fix from post-0.5 CVS to
+    fix a testsuite failure in mailbox.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 29 Jun 2004 10:26:03 +0200
+
+mailutils (1:0.4+20040601-2) unstable; urgency=low
+
+  * debian/mangen.sh: apply a few suggestions from Jeroen van Wolffelaar:
+    get rid of the "&& echo" after the help2man statements, so mangen.sh
+    exits if the generation fails. Also, add the mailutils install dir to
+    LD_LIBRARY_PATH so the binaries actually work. This fixes the "0-sized
+    manpages" bug when building mailutils in a chroot. Thanks, Jeroen!
+  * debian/rules: remove s[gu]id bits from installed binaries before running
+    mangen.sh, and restore them after the generation, so LD_LIBRARY_PATH is
+    applied. Thanks, manty!
+
+ -- Jordi Mallach <jordi@debian.org>  Tue,  8 Jun 2004 12:47:04 +0200
+
+mailutils (1:0.4+20040601-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + fixes a testsuite failure in amd64 (thanks calc and maswan).
+
+ -- Jordi Mallach <jordi@debian.org>  Tue,  1 Jun 2004 17:56:59 +0200
+
+mailutils (1:0.4+20040525-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * debian/rules: use DEB_SHLIBDEPS_INCLUDE to set the correct library
+    search path for dh_shlibdeps (closes: #251002).
+  * debian/control: add build dependency on liblocale-gettext-perl, while
+    help2man doesn't directly depend on that.
+  * debian/mangen.sh: set section to "8mailutils" for mail.local and
+    mail.remote (really closes: #244953).
+  * debian/rules: don't bother renaming mail.local.8, dh_installman does
+    the right thing anyway.
+  * debian/mailutils.manpages: updated.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 30 May 2004 21:00:19 +0200
+
+mailutils (1:0.4+20040414-4) unstable; urgency=low
+
+  * debian/mailutils.links: symlink mailx.1.gz to mail.1.gz.
+  * debian/rules:
+    + rename mail.local.8 to mail.local.8mailutils, to avoid a
+      file clash with sendmail packages (closes: #244953).
+    + rename movemail to movemail.mailutils so we can use alternatives
+      for it as well.
+    + call mangen.sh with the path to the binaries instead of hardcoding
+      it in the script.
+  * debian/{mailutils.install,mangen.sh}: update for new movemail name.
+  * debian/mailutils.manpages: update manpage names.
+  * debian/mailutils.{postinst,prerm}: add an alternative for movemail,
+    with greater priority than the version provided by XEmacs (10).
+    Thanks to Aaron M. Ucko for the suggestion.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun,  9 May 2004 11:27:27 +0200
+
+mailutils (1:0.4+20040414-3) unstable; urgency=low
+
+  * debian/control: I lose, add texi2html to Build-Depends too. I'm either
+    using Build-Depends-Indep incorrectly or still getting cdbs wrong. We'll
+    find out soon (closes: #244032).
+  * debian/mailutils.postinst: children, don't touch Debian packages when
+    sleep deprived. Fixup dangling symlink in alternatives caused by a silly
+    typo. Thanks, Aaron M. Ucko (closes: #243891).
+  * debian/rules: move manpage generation to install::, so the programs
+    are already available in debian/tmp.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 16 Apr 2004 17:13:12 +0200
+
+mailutils (1:0.4+20040414-2) unstable; urgency=low
+
+  * debian/mailutils-{imap4d,pop3d}.install: remove upstream manpages, they
+    are not useful now.
+  * debian/rules: try to replace common-build-arch:: and
+    common-build-indep:: usages with just build-arch:: and
+    build/mailutils-doc. This should fix the FTBFS due to missing texi2html.
+  * debian/mangen.sh: fix path for libexec binaries. Why this is working
+    anyway, I don't know.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 14 Apr 2004 18:55:47 +0200
+
+mailutils (1:0.4+20040414-1) unstable; urgency=low
+
+  * The "Wanted docs? Here's some..." release.
+  * New CVS snapshot.
+    + the alias option now works in mailrc (closes: #242585).
+    + fixes a pointer conversion on 64-bit platforms (closes: #226690).
+    + imap4d supports Maildir (closes: #217712).
+  * debian/control: add Build-Depends-Indep.
+  * debian/mangen.sh: new, script from Wojciech Polak to generate manpages
+    with help2man, tweaked a bit for the Debian build system and FHS.
+  * debian/rules:
+    + remove unneeded "-C" from DEB_MAKE_CHECK_TARGET rule
+      (thanks, Michael K. Edwards).
+    + build and install html documentation (thanks, Michael K. Edwards).
+    + use the simple-patchsys.
+    + run mangen.sh on build-arch. This provides manpages for all mailutils
+      binaries (closes: #116978, #199194, #203265).
+    + move cdbs includes to the top, leaving only the tarball defines before
+      it. This has the bonus of fixing the testsuite run.
+    + use install/ instead of binary-install/.
+  * debian/mailutils-doc.doc-base: new doc-base file for the HTML and info
+    documentation.
+  * debian/libmailutils0-dev.doc-base: likewise, for the architecture manual.
+  * debian/{libmailutils0-dev,mailutils,mailutils-comsatd,mailutils-imap4d,
+    mailutils-pop3d}.manpages: install manpages.
+  * debian/mailutils.postinst: add manpage slave alternatives.
+  * debian/mailutils-doc.TODO: remove manpages item.
+  * debian/libmailutils0-dev.install: include mailutils-config
+    (thanks, Joachim Nilsson; closes: #242816).
+  * debian/libmailutils0-dev.info: install muint.info.
+  * debian/libmailutils0.shlibs: update shlibs.
+  * debian/patches/01_html_doc.patch: new, patch from Michael K. Edwards to
+    fix HTML docs build.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 14 Apr 2004 15:05:57 +0200
+
+mailutils (1:0.4+20040116-1) unstable; urgency=low
+
+  * The "Abuse your free inodes" release.
+  * New CVS snapshot.
+    + finally includes Maildir support to the daemons and utilities.
+  * debian/control:
+    + build-depend on new gnutls10-dev.
+    + adjust descriptions to mention Maildir support.
+  * debian/libmailutils0.shlibs: bump to current version.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 16 Jan 2004 13:58:49 +0100
+
+mailutils (1:0.4+20040101-2) unstable; urgency=low
+
+  * debian/control: build-depend on new libidn11-dev (closes: #227754).
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 14 Jan 2004 00:35:08 +0100
+
+mailutils (1:0.4+20040101-1) unstable; urgency=medium
+
+  * The "2004 will suck less, I tell you!" release.
+  * New CVS snapshot.
+  * Bump epoch to add the upstream version to the version number. We are
+    going to use CVS tarballs for a while still, until we consider
+    official versions are useful enough.
+  * Use a tar.bz2 tarball from now on, to cut some source package size.
+  * debian/control:
+    + build-depend on bzip2.
+    + adjust mailutils' description for the addition of movemail.
+  * debian/{control,copyright,mailutils-mh.emacsen-startup,
+    mailutils-doc.README.Debian}: s/Mailutils/mailutils/. The official
+    upstream name is "GNU mailutils", lowercase. Thanks to
+    Bill Wohler <wohler@newt.com> for the suggestion.
+  * debian/mailutils.install: add new program movemail.
+  * debian/rules:
+    + make dh_fixperms not change the permissions of dotlock, to
+      preserve the sgid bit. This was probably lost in the switch to
+      CDBS (closes: #224569).
+    + ljlane's new awk magic to grok the epoch in our version extraction.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  1 Jan 2004 23:46:18 +0100
+
+mailutils (20031104-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + fixes major mailutils-mh breakage reported by Peter S. Galbraith.
+  * debian/control: build depend on guile-1.6-dev, drop libguile-dev
+    and guile1.4. For some reason, building against 1.4 fails now. A good
+    excuse to transition.
+  * debian/mailutils-pop3d.init.WIP: new init script by Jeff Bailey.
+    Disabled for now, we have problems to stop the running pop3d processes.
+  * debian/mailutils-pop3d.default.WIP: default options for pop3d.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue,  4 Nov 2003 18:44:47 +0100
+
+mailutils (20031031-1) unstable; urgency=low
+
+  * New CVS snapshot (mailutils release 0.4).
+    + fixes imap4d manpage (closes: #210241).
+    + adds -a option to GNU mail (closes: #218467).
+    + mail -s <digits> or with quotes should work ok now (closes: #218456).
+    + more mh improvements.
+  * First release coming from svn.debian.org!
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 31 Oct 2003 16:44:10 +0100
+
+mailutils (20030902-1) unstable; urgency=low
+
+  * The "Don't fall off your bicycle, it's painful" release.
+  * New CVS snapshot.
+    + even more mh improvements. Includes `ali', apparently a very
+      useful artifact, as well as `replgroupcomps' and `components'.
+      MH-E users, enjoy!
+  * debian/control: bump Standards-Version to 3.6.1.0.
+  * debian/libmailutils0.shlibs: bump dependencies and add entries
+    for new libs.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue,  2 Sep 2003 01:55:46 +0200
+
+mailutils (20030818-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + fixes UIDL management bug in pop3d (closes: #205828).
+    + adds a config option to make GNU mail act like mailx with respect
+      to header prompting. Default to GNU mail behaviour (closes: #205613).
+    + fixes mail.rc support.
+    + fixes return value when interrupting mail in mailx emulation mode.
+    + greatly improves mh support for use with current MH-E releases.
+  * debian/control:
+    + remove mailutils-el entirely and move mailutils-mh.el
+      to mailutils-mh (thanks, Peter S. Galbraith; closes: #203265).
+    + add Suggests: mh-e to mailutils-mh.
+  * debian/mail.rc: add the mailx configuration option.
+  * debian/mailutils-mh.emacsen-startup: emacsen script to set up old
+    MH-E to use us (Peter S. Galbraith).
+  * debian/mailutils-el.*: removed.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 18 Aug 2003 21:01:15 +0200
+
+mailutils (20030809-2) unstable; urgency=low
+
+  * The "Olympic triathlons can make you tired" release.
+  * debian/control: remove erroneous Provides: mh from mailutils-mh (thanks
+    again, Peter).
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 10 Aug 2003 16:39:15 +0200
+
+mailutils (20030809-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * debian/control:
+    + add short descriptions for all the programs included in the mailutils
+      package (closes: #198353).
+    + remove mh conflict from mailutils-mh (thanks, Peter S. Galbraith;
+      closes: #204412).
+    + switch to libgnutls7-dev.
+    + Standards-Version: 3.6.0.0.
+  * debian/libmailutils0.shlibs: bump to current version.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat,  9 Aug 2003 18:40:07 +0200
+
+mailutils (20030607-2) unstable; urgency=low
+
+  * And for our next trick, let's switch to CDBS.
+  * debian/control: add cdbs to build-deps, drop dbs and bump debhelper
+    to (>= 4.1.0).
+  * debian/rules: new minimal rules file, written by Jeff Bailey.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 25 Jun 2003 18:59:06 +0200
+
+mailutils (20030607-1) unstable; urgency=low
+
+  * New CVS snapshot (mailutils release 0.3.1).
+  * debian/control:
+    + remove conflict on nmh, as we removed the conflicting manpage
+      long ago (thanks, David B. Harris; closes: #174656).
+    + update gdbm build-depend to libgdbm-dev (thanks James for the warning).
+    + bump Standards-Version to 3.5.10.0 (no changes required).
+  * debian/rules: configure with --disable-rpath.
+  * debian/mailutils-doc.README.Debian: update configure options.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat,  7 Jun 2003 14:50:51 +0200
+
+mailutils (20030425-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + adds PostgreSQL support, which we can't use for now, due to the OpenSSL
+      license again...
+  * debian/rules: change --enable-mysql to --with-mysql, renamed upstream.
+  * debian/mailutils-doc.README.Debian: document new configure option.
+  * debian/libmailutils0.shlibs: bump shlibs.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 27 Apr 2003 01:57:04 +0200
+
+mailutils (20030411-4) unstable; urgency=low
+
+  * debian/control: build-depend on libmysqlclient10-dev again, to use
+    the LGPL fork.
+  * debian/rules: add --enable-mysql to configure options.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 15 Apr 2003 13:43:15 +0200
+
+mailutils (20030411-3) unstable; urgency=low
+
+  * debian/control: fun, fun. Stop build-depending on libmysqlclient-dev
+    temporarily, as libmysqlclient12 now depends on OpenSSL, and we can't
+    link against it due to GPL incompatibility (see #188723)
+  * debian/rules: remove --enable-mysql.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 12 Apr 2003 18:13:06 +0200
+
+mailutils (20030411-2) unstable; urgency=low
+
+  * debian/control: yuck, update Build-Depends to new libmysqlclient-dev.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 11 Apr 2003 16:42:13 +0200
+
+mailutils (20030411-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + hopefully fixes m68k this time.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 11 Apr 2003 14:53:29 +0200
+
+mailutils (20030404-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + should fix the testsuite error on the m68k buildd (thanks, Adam Conrad).
+  * debian/control: change libmailutils0-dev to section libdevel, to match the
+    overrides file.
+  * debian/libmailutils0.shlibs: update to current version.
+  * debian/rules: do not "export" DEB_HOST_GNU_TYPE and DEB_BUILD_GNU_TYPE,
+    just define them.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri,  4 Apr 2003 00:36:35 +0200
+
+mailutils (20030322-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * libmailutils0.shlibs: updated.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 22 Mar 2003 22:31:46 +0100
+
+mailutils (20030221-3) unstable; urgency=low
+
+  * debian/control:
+    + add build dependency on libgsasl1-dev and libidn9-dev.
+    + Standards-Version: 3.5.9.0 (no changes).
+  * debian/rules: configure with --with-gsasl.
+  * debian/mailutils-doc.README.Debian: document new configuration option.
+  * debian/mailutils-mh.install: simplify list with a wildcard.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 17 Mar 2003 15:17:57 +0100
+
+mailutils (20030221-2) unstable; urgency=low
+
+  * The "no, I'm not build-depending on Emacs, no" release.
+  * debian/rules: add --with-lispdir=\$${prefix}/share/emacs/site-lisp, to
+    workaround a missing build-dep on some emacs flavour.
+  * debian/mailutils-doc.README.Debian: document this.
+  * debian/mailutils.links: remove dangling symlink for mailx.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 25 Feb 2003 13:08:35 +0100
+
+mailutils (20030221-1) unstable; urgency=low
+
+  * New CVS snapshot (mailutils release 0.3).
+  * debian/control:
+    + create a new binary package "mailutils-comsatd", and make it replace
+      older mailutils. Conflict with "biff", which provides similar
+      functionality and uses the same inetd space.
+    + create another binary package "mailutils-mh" with the mh utilities.
+    + yet another binary package "mailutils-el", which just has the new
+      mailutils-mh.el emacsen stuff. Otherwise, we'd make mailutils depend on
+      emacsen, which is Bad and Evil and probably based on a "rogue country".
+    + Standards-Version: 3.5.8.0.
+  * debian/libmailutils0.shlibs: tighten to current release.
+  * debian/mailutils-comsatd.install: install usr/sbin/comsatd.
+  * debian/mailutils-comsatd.postinst: install "biff" inetd entry.
+  * debian/mailutils-comsatd.prerm: remove inetd entry.
+  * debian/mailutils-doc.README.Debian: update build options.
+  * debian/mailutils-doc.TODO: updated.
+  * debian/mailutils-el.install: install mailutils-mh.el.
+  * debian/mailutils-el.emacsen-install: added. If this works, it's pure luck.
+  * debian/mailutils-el.emacsen-remove: added.
+  * debian/mailutils-mh.install: install mh utilities.
+  * debian/mailutils.install: remove comsatd from this package.
+  * debian/mailutils.postinst: remove manpage slave alternatives.
+  * debian/mailutils.undocumented: removed, deprecated by policy.
+  * debian/rules:
+    + configure with --enable-mh-utils.
+    + remove calls to dh_undocumented.
+    + add call to dh_installemacsen to binary-indep.
+    + install examples in mailutils-doc.
+    + install mh's README and TODO in mailutils-mh.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 21 Feb 2003 21:50:23 +0100
+
+mailutils (20030122-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + includes libmu_scm/Makefile.am fix from Stephen Marenka which fixes a
+      FTBFS in some m68k autobuilders (closes: #177019). Thanks!
+    + introduces TLS support via GNUtls!
+  * debian/control:
+    + add Build-Depends on libgnutls5, remove automake1.7.
+    + improve descriptions a bit.
+  * debian/copyright:
+    + add myself to the packaging history.
+    + remove CMU copyright notice for sieve, it has been rewritten under the
+      GPL.
+    + the documentation is now under the FDL, note that and add the complete
+      text of the license.
+  * debian/libmailutils0.shlibs: bump version requirement.
+  * debian/mailutils-doc.README.Debian: document new configure options.
+  * debian/mailutils-doc.TODO: added with some pending things.
+  * debian/mailutils-{imap4d,pop3d}.{postinst,prerm}: set -e on all scripts.
+  * debian/rules:
+    + add --with-gnutls to configure call.
+    + add debug flags to the testsuite if compiling with D_B_O "noopt".
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 22 Jan 2003 19:10:32 +0100
+
+mailutils (20030109-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + fixes sieve segfault on ia64 (closes: #175726).
+  * debian/control:
+    + add Conflicts: nmh to mailutils, for now, till nmh gets fixed
+      (workaround for #174656, #174658 and #175301, nmh needs fixing).
+    + remove folders from mailutils' description.
+  * debian/mailutils.install: something weird happened with /usr/bin/folders
+    on the last upload, but it should have never been installed (and less as
+    a symlink to my build dir)... removed.
+  * debian/mailutils.undocumented: removed folders.1.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  9 Jan 2003 18:22:05 +0100
+
+mailutils (20021229-1) unstable; urgency=low
+
+  * New CVS snapshot (mailutils release 0.2.1).
+    + Mailutils now has NLS support.
+  * debian/control:
+    + gave in, and swapped the Maintainer: and Uploaders: fields.
+      So... "New Maintainer".
+    + add Build-Depend on gettext.
+    + add new binaries to mailutils' description.
+  * debian/libmailutils0.install: include gettext mo files.
+  * debian/libmailutils0.shlib: bump version, new symbols have been added.
+  * debian/mailutils.install: include missing programs: dotlock, folders,
+    comsatd; and helper programs mail.local and mail.remote.
+  * debian/mailutils.postinst: install an alternative for dotlock.
+    The priority is less than maildrop's binary, for now.
+  * debian/mailutils.prerm: remove the new alternative.
+  * debian/mailutils.undocumented: add entries for the new binaries.
+  * debian/rules:
+    + configure with --libexec=\$${prefix}/lib/mailutils.
+    + add dotlock to list of binaries that are renamed to foo.mailutils,
+      to use it with alternatives.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 29 Dec 2002 14:25:00 +0100
+
+mailutils (20021210-2) unstable; urgency=low
+
+  * debian/mailutils.install: really add /usr/lib/mailutils as I intended,
+    not just /usr/lib (closes: #172584).
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 11 Dec 2002 16:04:05 +0100
+
+mailutils (20021210-1) unstable; urgency=low
+
+  * New CVS snapshot. Should fix the two testsuit errors spotted by
+    autobuilders.
+  * debian/libmailutils0.shlib: added. For some reason, using old libs with
+    newer imap4d's can cause problems, so tighten the dependencies
+    (closes: #168637).
+  * debian/libmailutils0.README.Debian: add a note about the usage of the
+    guile modules, which require the installation of libmailutils0-dev.
+  * debian/mailutils.install: add /usr/lib/mailutils stuff (second part of
+    #168251).
+  * debian/patches/00_libmu_scm_symlinks: removed, accepted upstream.
+  * debian/rules: no more need to call automake.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 10 Dec 2002 17:38:05 +0100
+
+mailutils (20021209-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * debian/control: switch to automake1.7 in Build-Depends.
+  * debian/rules: run automake before running configure.
+  * debian/patches/00_libmu_scm_symlinks: fix creation of absolute links
+    (closes: #168251).
+  * debian/mailutils.postinst: forget about weird stuff and just do what
+    everyone else does with alternatives (closes: #164909).
+
+ -- Jordi Mallach <jordi@debian.org>  Mon,  9 Dec 2002 14:53:31 +0100
+
+mailutils (20021017-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * debian/control: drop automake1.6 build dependency.
+  * debian/patches/00_sieve_build_fix: removed, fixed upstream.
+  * debian/patches/01_mail.local_build_fix: likewise.
+  * debian/mailutils.preinst: remove the leftover frm diversion.
+    Patch from Matej Vela, thanks! (closes: #164909)
+  * debian/mailutils.postinst: duh, fix (or try to) an always-false
+    condition. Thanks again to Matej.
+  * debian/rules:
+    + remove automake call, Makefile.am is fixed.
+    + extract the upstream version number from debian/changelog, instead of
+      hardcoding it with every snapshot.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 18 Oct 2002 13:07:35 +0200
+
+mailutils (20021007-1) unstable; urgency=medium
+
+  * New CVS snapshot.
+  * Should fix the undefined references in libmailbox, as reported by
+    Matthew Whitworth (closes: #163372).
+  * debian/README: renamed to mailutils-doc.README.Debian, so it actually
+    gets installed somewhere.
+  * debian/control:
+    + add 'Conflicts: elm-me+ (<< 2.4pl25ME+99c-3)'.
+    + add 'Build-Depends: automake1.6'.
+    + mention other tools in "mailutils", it not only contains mailx.
+  * debian/patches/00_sieve_build_fix: declare addrdebug unconditionally in
+    addr.c.
+  * debian/patches/01_mail.local_build_fix: add mailbox/ to INCLUDES in
+    Makefile.am.
+  * debian/mailutils.{postrm,prerm}: add alternatives for frm, message and
+    readmsg, priority 20 (mailutils' part of #141183).
+  * debian/mailutils.{postrm,preinst}: removed.
+  * debian/mailutils.{install,undocumented}: change binary names for frm,
+    messages and readmsg.
+  * debian/rules: run automake-1.6 before configuring.
+  * PLEASE NOTE: with this revision, systems with elm-me+ and mailutils
+    installed will default to having frm, messages and readmsg from elm-me+.
+    Use update-alternatives to change the defaults.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 13 Oct 2002 13:37:54 +0200
+
+mailutils (20020904-2) unstable; urgency=low
+
+  * debian/control:
+    + temporarily add zlib1g-dev in Build-Depends, which (I guess) should
+      be done by libmysqlclient10-dev.
+    + fix typo in Build-Depends.
+    + remove extra depends on libmailutils, which is already handled by
+      dpkg-shlibdeps.
+    + make mailutils Suggest: mailutils-doc too.
+  * debian/rules: make linda shut up about the space in "#! /usr/bin/make".
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  5 Sep 2002 02:31:33 +0200
+
+mailutils (20020904-1) unstable; urgency=low
+
+  * New CVS snapshot (mailutils release 0.1).
+  * Stop making Debian native packages.
+  * debian/control:
+    + add libmysqlclient-dev and libkrb5-dev to Build-Depends:.
+    + add better descriptions for imap4d and pop3d (closes: #157866).
+  * debian/rules:
+    + add support for DEB_BUILD_OPTIONS "noopt".
+    + add MySQL, GSSAPI and virtual domains support in the configure call,
+      and set the default mail spool to /var/mail.
+  * debian/README: updated for new configure options.
+  * debian/mailutils-pop3d.install: install popauth.1.
+  * debian/mailutils-pop3d.undocumented: removed.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 05 Sep 2002 00:44:22 +0200
+
+mailutils (20020902-1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * debian/mail.rc: fix copy & paste error (closes: #158029). Thanks Casey!
+
+ -- Jordi Mallach <jordi@debian.org>  Mon,  2 Sep 2002 14:16:46 +0200
+
+mailutils (20020823-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + should fix build error on Alpha and the testsuites for
+      s390, ia64, powerpc and m68k (should fix #157943).
+  * debian/links: install a symlink for mail.1 -> mailx.1 too.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 23 Aug 2002 17:35:53 +0200
+
+mailutils (20020822-1) unstable; urgency=low
+
+  * New CVS snapshot.
+    + imap4d marks read mails properly (part of #153034).
+    + mail should now be able to send mail through SSMTP or Qmail
+      (closes: #155475).
+  * debian/control:
+    + add myself to Uploaders:.
+    + versioned Build-Depend: debhelper (>= 4.0.0).
+  * debian/mailutils.links: add link from /usr/bin/mailx to /usr/bin/mail
+    (closes: #154748)
+  * debian/mail.rc: global mail.rc from Sergey Poznyakoff.
+  * debian/rules: install mail.rc by hand in debian/tmp.
+  * debian/mailutils.install: install debian/mail.rc in /etc (closes: #116377).
+  * debian/mailutils-{imap4d,pop3d}.{postinst,prerm}: call update-inetd
+    unconditionally. If you want to disable imap or pop entries in
+    /etc/inetd.conf, use a simple comment "#", not #<off>#, as (poorly)
+    documented by update-inetd(8) (closes: #154448). Thanks to Kamion
+    for the advice.
+  * debian/mailutils.files: removed.
+  * imap4d not seeing mails was fixed in 20020805-1 (closes: #157344).
+  * ACK Alfie's NMU. Thanks! (closes: #155601).
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 22 Aug 2002 20:05:00 +0200
+
+mailutils (20020805-1.1) unstable; urgency=low
+
+  * NMU: Fixed rulesfile to make it install binaries again (Closes: #155601)
+
+ -- Gerfried Fuchs <alfie@debian.org>  Fri, 16 Aug 2002 09:35:04 +0200
+
+mailutils (20020805-1) unstable; urgency=low
+
+  * This is the "Jordi Mallach" release.
+
+  * Update from CVS.  Fixes IMAP problems (Closes: #155091)
+    Tx. to Jordi Mallach
+
+  * Use dh_install instead of dh_movefiles.
+
+  * No longer builds in the srcdir.
+
+  * Only add pop3d and imap4d to inetd.conf on install (Closes: #154448)
+    Tx again to Jordi Mallach.
+
+  * Include more docs (Closes: #155103)
+    Guess who this time?  Jordi Mallach! Woo!
+
+  * Bah!  elm-me+ as no maintainer.  Fine, I'll divert /usr/bin/frm.
+    (Closes: #116374, #139762) Tx Joey Hess, `russell'
+
+  * Install mailutils correctly in inetd. (Closes: #151279)
+    Tx to Matt Zimmerman for noting this.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Mon,  5 Aug 2002 10:11:33 -0400
+
+mailutils (20020713-1) unstable; urgency=low
+
+  * Update from CVS.  Thanks Janico Greifenberg (Closes: #146823)
+
+  * Call make check.
+
+  * Added 'README.Debian' file.  Let me know if you want more
+  information in there.  Thanks to Jurgen A. Erhard (Closes: #139679)
+
+  * Fix typo in libmailutils0 description.  Thanks to Matt Zimmerman
+  (Closes: #124998)
+
+  * Clarify licensing, add note about sieve license.  Thanks to
+  Takuo KITAME (Closes: #126094)
+
+  * And tight depends against libmailutils0.  Thanks to Kevin
+  Everets (Closes: #140302)
+
+ -- Jeff Bailey <jbailey@nisa.net>  Sun, 14 Jul 2002 01:15:23 -0400
+
+mailutils (20020409-1) unstable; urgency=low
+
+  * Update from CVS to see if locking works.  Thanks to Jordi Mallach for
+    his tests.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Tue,  9 Apr 2002 08:35:31 -0400
+
+mailutils (20020404-1) unstable; urgency=low
+
+  * References to maildir removed and options renamed. (Closes: #139678)
+    From Jurgen A. Erhard (Sorry about the `u'...)
+
+  * This update fixes an LSUB bug, and should hopefully make `mail' work
+    correctly out of the box.  We'll see how it goes.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Thu,  4 Apr 2002 11:56:27 -0500
+
+mailutils (20020326-1) unstable; urgency=low
+
+  * Well.  Critical bugs.  This snapshot supposedly includes the fix.
+  I don't know that for certain, so I'm not Closes'ing any of them
+  until I get successful reports.  But for you crazies who read this,
+  hopefully this will solve your problems.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Tue, 26 Mar 2002 12:34:13 -0500
+
+mailutils (20020221-1) unstable; urgency=low
+
+  * GAH!  Has it been so long since I did my NM that I can't get the
+  closes regexps right?  If your bug gets notified from this,
+  it was fixed in Yesterday's update.
+  Closes: #126755, #134332, #134330, #126095, #126098, #119010, #116976, #116977
+  * New snapshot gives the ability to choose which PAM file you want
+  from the command line.
+  * Make sure that the info files are registered.  Thanks to Sam Roberts for
+  bringing this to my attention.
+  * Other random bug fixes.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Thu, 21 Feb 2002 21:06:53 -0500
+
+mailutils (20020218-1) unstable; urgency=low
+
+  * Use prototypes on functions when they're available
+    in the header.  From John R.Daily (Closes #126755)
+  * Why would you ever want to *remove* mailutils?  *sigh*
+    Fix removal of imap4d from inetd.conf.  From Norbert Veber
+    (Closes #134332)
+  * Avoid infinite recursion.  From Norbert Veber (Closes #134330)
+  * Setup configure for cross-building.
+  * Newer version.  From Takuo KITAME (Closes #126095)
+  * List an upstream URL in copyright.  From Takuo KITAME (Closes #126098)
+  * Use unsigned int in both pop3d.h and pop3d.c
+    That section of code doesn't exist anymore.  Thanks for the NMU
+    From James Troup and LaMont Jones (Closes #119010)
+  * Man pages for pop3d and imap3d now included (Closes #116976, #116977)
+  * Add --with-gdbm, include popauth
+
+ -- Jeff Bailey <jbailey@nisa.net>  Sat, 10 Nov 2001 15:43:47 -0500
+
+mailutils (20011103-1.1) unstable; urgency=low
+
+  * NMU
+  * Fix build failure on ia64.  Closes: #119010.
+
+ -- LaMont Jones <lamont@debian.org>  Mon, 24 Dec 2001 22:41:06 -0700
+
+mailutils (20011103-1) unstable; urgency=low
+
+  * New CVS snapshot should fix building on 64 bit platforms.
+  * New package mailutils-doc for documentation.
+  * Use DESTDIR, not prefix for installing
+
+ -- Jeff Bailey <jbailey@nisa.net>  Wed,  7 Nov 2001 10:47:36 -0500
+
+mailutils (20011022-1) unstable; urgency=low
+
+  * Move libmailutils0-dev package to devel where it should be.
+  * Add missing Build Depends (Closes: #116089)
+  * Provide a useful short description for libmailutils0-dev (Closes: #116075)
+  * Make sure sysconfdir is set to /etc.  This half finishes 116377,
+    I still need to write the documentation for the config file.
+
+ -- Jeff Bailey <jbailey@nisa.net>  Mon, 22 Oct 2001 14:21:25 -0400
+
+mailutils (20011015-1) unstable; urgency=low
+
+  * Initial Release (Closes: #115435).
+
+ -- Jeff Bailey <jbailey@nisa.net>  Fri, 12 Oct 2001 21:13:34 -0500

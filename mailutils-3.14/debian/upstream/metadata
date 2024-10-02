@@ -1,0 +1,6 @@
+Bug-Database: https://savannah.gnu.org/bugs/?group=mailutils
+Bug-Submit: bug-mailutils@gnu.org
+Documentation: https://mailutils.org/manual/mailutils.html
+Repository: https://git.savannah.gnu.org/git/mailutils.git
+Repository-Browse: https://git.savannah.gnu.org/cgit/mailutils.git/
+Security-Contact: Sergey Poznyakoff <gray@gnu.org.ua>

@@ -1,0 +1,10 @@
+usr/bin/decodemail
+usr/bin/dotlock.mailutils
+usr/bin/frm.mailutils
+usr/bin/from.mailutils
+usr/bin/mail.mailutils
+usr/bin/messages.mailutils
+usr/bin/mimeview
+usr/bin/movemail.mailutils
+usr/bin/readmsg.mailutils
+usr/bin/sieve

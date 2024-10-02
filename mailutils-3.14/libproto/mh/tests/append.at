@@ -1,0 +1,140 @@
+# GNU Mailutils -- a suite of utilities for electronic mail -*- autotest -*-
+# Copyright (C) 2020-2022 Free Software Foundation, Inc.
+#
+# This library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_SETUP([append])
+AT_CHECK([mbox2dir -m -p -v 10 -u inbox $spooldir/mbox1])
+AT_DATA([msg],
+[Received: (from alice@wonder.land)
+	by wonder.land id 3304
+	for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date: Mon, 29 Jul 2002 22:00:04 +0100
+From: Alice  <alice@wonder.land>
+Message-Id: <200207292200.3304@wonder.land>
+To: March Hare  <hare@wonder.land>
+Subject: Re: Invitation
+Status: P
+
+Then it wasn't very civil of you to offer it
+])
+AT_DATA([commands],
+[append msg
+count
+6
+uid
+env_date
+env_sender
+attr
+headers
+body_text
+])
+AT_CHECK([
+mbop -m inbox < commands
+],
+[0],
+[append: OK
+count: 6
+6 current message
+6 uid: 6
+6 env_date: Mon Jul 29 21:00:09 2002
+6 env_sender: alice@wonder.land
+6 attr: -
+6 headers: Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+
+6 body_text: Then it wasn't very civil of you to offer it
+
+])
+
+AT_DATA([commands.atr],
+[append -attr FRP msg
+count
+7
+uid
+env_date
+env_sender
+attr
+headers
+body_text
+])
+AT_CHECK([
+mbop -m inbox < commands.atr
+],
+[0],
+[append: OK
+count: 7
+7 current message
+7 uid: 7
+7 env_date: Mon Jul 29 21:00:09 2002
+7 env_sender: alice@wonder.land
+7 attr: FPR
+7 headers: Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Status:FPR
+
+7 body_text: Then it wasn't very civil of you to offer it
+
+])
+
+AT_DATA([commands.ae],
+[append -sender gray@gnu.org -date 'Sat Dec  4 08:00:00 2021' -attr FRP msg
+count
+8
+uid
+env_date
+env_sender
+attr
+headers
+body_text
+])
+
+AT_CHECK([TZ=0 mbop -m inbox < commands.ae],
+[0],
+[append: OK
+count: 8
+8 current message
+8 uid: 8
+8 env_date: Sat Dec  4 08:00:00 2021
+8 env_sender: gray@gnu.org
+8 attr: FPR
+8 headers: Return-Path:gray@gnu.org
+Received:from localhost by localhost; Sat,  4 Dec 2021 08:00:00 +0000
+Received:(from alice@wonder.land) by wonder.land id 3304 for hare@wonder.land; Mon, 29 Jul 2002 22:00:09 +0100
+Date:Mon, 29 Jul 2002 22:00:04 +0100
+From:Alice  <alice@wonder.land>
+Message-Id:<200207292200.3304@wonder.land>
+To:March Hare  <hare@wonder.land>
+Subject:Re: Invitation
+Status:FPR
+
+8 body_text: Then it wasn't very civil of you to offer it
+
+])
+
+AT_CHECK([
+mbop -m inbox uidvalidity
+],
+[0],
+[uidvalidity: 10
+])
+AT_CLEANUP

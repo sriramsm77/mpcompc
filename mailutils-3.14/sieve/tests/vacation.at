@@ -1,0 +1,437 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2015-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_BANNER([vacation])
+m4_pushdef([MUT_SIEVE_EXT_NAME],[vacation])
+
+MUT_SIEVE_EXT_TEST([default],[vac00],
+[require "vacation";
+
+vacation :database "vacation.db" "I'm on vacation";
+],
+[MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 320
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([aliases],[vac01],
+[require "vacation";
+
+vacation :database "vacation.db" :aliases [[ "roadrunner@acme.example.com" ]] "I'm on vacation";
+],
+[MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: roadrunner@acme.example.com
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 239
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+I'm on vacation
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 320
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([always_reply],[vac02],
+[require "vacation";
+
+vacation :database "vacation.db" :always_reply "I'm on vacation";
+],
+[MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 239
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+I'm on vacation
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: b1ff@de.res.example.com
+LENGTH: 231
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: b1ff@de.res.example.com
+Subject: =?UTF-8?Q?Re:_$$$_YOU,_TOO,_CAN_BE_A_MILLIONAIRE!_$$$?=
+In-Reply-To: Your message of TBD
+
+I'm on vacation
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 320
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([database matching],[vac03],
+[require "vacation";
+
+vacation :database "vacation.db" :always_reply "I'm on vacation";
+],
+[MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 239
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+I'm on vacation
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: b1ff@de.res.example.com
+LENGTH: 231
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: b1ff@de.res.example.com
+Subject: =?UTF-8?Q?Re:_$$$_YOU,_TOO,_CAN_BE_A_MILLIONAIRE!_$$$?=
+In-Reply-To: Your message of TBD
+
+I'm on vacation
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 320
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([mime],[vac04],
+[require "vacation";
+
+vacation :database "vacation.db" :always_reply :mime "I'm on vacation.";
+],
+[MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 250
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: base64
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+SSdtIG9uIHZhY2F0aW9uLg==
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: b1ff@de.res.example.com
+LENGTH: 242
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: base64
+To: b1ff@de.res.example.com
+Subject: =?UTF-8?Q?Re:_$$$_YOU,_TOO,_CAN_BE_A_MILLIONAIRE!_$$$?=
+In-Reply-To: Your message of TBD
+
+SSdtIG9uIHZhY2F0aW9uLg==
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 331
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: base64
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+SSdtIG9uIHZhY2F0aW9uLg==
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([reply from RFC2822 file],[vac05],
+[require "vacation";
+
+vacation :database "vacation.db" :always_reply :rfc2822 :file "reply";
+],
+[AT_DATA([reply],[X-Mail-Processor: sieve
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+])
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat $MAIL_DUMP
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 260
+X-Mail-Processor: sieve
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: b1ff@de.res.example.com
+LENGTH: 252
+X-Mail-Processor: sieve
+To: b1ff@de.res.example.com
+Subject: =?UTF-8?Q?Re:_$$$_YOU,_TOO,_CAN_BE_A_MILLIONAIRE!_$$$?=
+In-Reply-To: Your message of TBD
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 341
+X-Mail-Processor: sieve
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+MUT_SIEVE_EXT_TEST([reply body from file],[vac06],
+[require "vacation";
+
+vacation :database "vacation.db" :always_reply :file "reply";
+],
+[AT_DATA([reply],[I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+])
+MUT_MBCOPY($abs_top_srcdir/testsuite/spool/sieve.mbox,mailbox)
+MAIL_DUMP=`pwd`/mta.diag
+MAIL_DUMP_APPEND=1
+export MAIL_DUMP MAIL_DUMP_APPEND
+sieve MUT_SIEVE_CMDLINE MUT_SIEVE_OPTIONS -f ./mailbox prog || exit 1
+cat ./mta.diag
+],
+[[MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: coyote@desert.example.org
+LENGTH: 325
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: coyote@desert.example.org
+Subject: =?UTF-8?Q?Re:_I_have_a_present_for_you?=
+In-Reply-To: Your message of Sun May  6 22:16:47 2001
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: b1ff@de.res.example.com
+LENGTH: 317
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: b1ff@de.res.example.com
+Subject: =?UTF-8?Q?Re:_$$$_YOU,_TOO,_CAN_BE_A_MILLIONAIRE!_$$$?=
+In-Reply-To: Your message of TBD
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+MSGID: 0001
+SENDER: foobar@nonexistent.net
+NRCPT: 1
+RCPT[0]: bar@dontmailme.org
+LENGTH: 406
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: bar@dontmailme.org
+Subject: =?UTF-8?Q?Re:_Coffee?=
+In-Reply-To: Your message of Fri, 28 Dec 2001 23:28:08 +0200
+	<200112232808.fERKR9N16790@dontmailme.org>
+References: <200112232808.fERKR9N16790@dontmailme.org>
+
+I'm on vacation right now.
+I will attend to your message as soon as I'm back.
+
+Best regards,
+Ty Coon
+
+]],
+[VACATION on msg uid 1
+VACATION on msg uid 2
+VACATION on msg uid 3
+])
+
+m4_popdef([MUT_SIEVE_EXT_NAME])
+

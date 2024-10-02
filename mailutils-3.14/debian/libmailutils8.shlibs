@@ -1,0 +1,14 @@
+libmailutils 8 libmailutils8
+libmuaux 8 libmailutils8
+libmu_auth 8 libmailutils8
+libmu_dbm 8 libmailutils8
+libmu_dotmail 8 libmailutils8
+libmu_imap 8 libmailutils8
+libmu_maildir 8 libmailutils8
+libmu_mailer 8 libmailutils8
+libmu_mbox 8 libmailutils8
+libmu_mh 8 libmailutils8
+libmu_pop 8 libmailutils8
+libmu_py 8 libmailutils8
+libmu_scm 8 libmailutils8
+libmu_sieve 8 libmailutils8

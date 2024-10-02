@@ -1,0 +1,12 @@
+;; -*-emacs-lisp-*-
+;;
+;; Emacs startup file for the Debian GNU/Linux mailutils-mh package
+
+(if (not (file-exists-p "/usr/bin/mu-mh/inc"))
+    (message "Package mailutils-mh removed but not purged.  Skipping setup.")
+
+  ;; This sets up Emacs20's and Emacs21's MH-E to use GNU mailutils MH.
+  ;; The MH-E Debian package (> 8.0) will find us (or nmh) on its own.
+  (setq mh-progs "/usr/bin/mu-mh"
+        mh-lib "/usr/share/mailutils/mh"
+        mh-lib-progs mh-progs))

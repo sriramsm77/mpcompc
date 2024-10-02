@@ -1,0 +1,71 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2011-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+MU_CHECK([unmodified message],
+         [modmesg00],
+         [modmesg],
+         [0],
+[From: root
+
+This is a test message.
+oo
+])
+
+MU_CHECK([add headers],
+         [modmesg01],
+         [modmesg -a To:gray@localhost -a Subject:test],
+         [0],
+[From: root
+To: gray@localhost
+Subject: test
+
+This is a test message.
+oo
+])
+
+MU_CHECK([modify body],
+         [modmesg02],
+         [modmesg -t "word\n"],
+         [0],
+[From: root
+
+This is a test message.
+oo
+word
+])
+
+MU_CHECK([modify body 2],
+         [modmesg03],
+         [modmesg -l 0 -t "That"],
+         [0],
+[From: root
+
+That is a test message.
+oo
+])
+
+MU_CHECK([modify headers and body],
+         [modmesg03],
+         [modmesg -a To:gray@localhost -a Subject:test -l 0 -t "That"],
+         [0],
+[From: root
+To: gray@localhost
+Subject: test
+
+That is a test message.
+oo
+])
+

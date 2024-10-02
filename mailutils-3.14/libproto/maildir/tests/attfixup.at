@@ -1,0 +1,44 @@
+AT_SETUP([attribute fixup])
+
+AT_DATA([names],
+[cur/1284628225.M17468P3883Q0.Trurl:2,S
+cur/1284628225.M19181P3883Q1.Trurl:2,RS
+cur/1284628225.M20118P3883Q2.Trurl:2,S
+cur/1284628225.M21284P3883Q3.Trurl:2,S
+cur/1284628225.M22502P3883Q4.Trurl:2,S
+])
+
+AT_CHECK([mbox2dir -i names inbox $spooldir/mbox1])
+
+AT_CHECK([
+AT_DATA([inbox/.mu-prop],
+[uid-validity: 10
+])
+mbop -m inbox count
+find inbox/cur -type f | sort
+cp inbox/.mu-prop saved_mu_prop
+],
+[0],
+[count: 5
+inbox/cur/1284628225.M17468P3883Q0.Trurl,a=O,u=1:2,
+inbox/cur/1284628225.M19181P3883Q1.Trurl,a=O,u=2:2,S
+inbox/cur/1284628225.M20118P3883Q2.Trurl,a=O,u=3:2,
+inbox/cur/1284628225.M21284P3883Q3.Trurl,a=O,u=4:2,
+inbox/cur/1284628225.M22502P3883Q4.Trurl,a=O,u=5:2,
+])
+
+AT_CHECK([
+mbop -m inbox count
+],
+[0],
+[count: 5
+])
+
+AT_CHECK([
+cp saved_mu_prop expout
+cat inbox/.mu-prop
+],
+[0],
+[expout])
+
+AT_CLEANUP

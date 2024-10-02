@@ -1,0 +1,257 @@
+# -*- tcl -*-
+# This file is part of Mailutils testsuite.
+# Copyright (C) 2002-2022 Free Software Foundation, Inc.
+#  
+# GNU Mailutils is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# GNU Mailutils is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#  
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>. 
+
+pop3d_start 
+pop3d_auth "user!passwd" "guessme"
+
+## Test STAT command
+pop3d_test "STAT" "+OK 95 34659"
+
+## Test LIST command. This will be used twice.
+proc test_list {} {
+	pop3d_test "LIST" \
+	"+OK" \
+	"1 313" \
+	"2 323" \
+	"3 318" \
+	"4 347" \
+	"5 364" \
+	"6 380" \
+	"7 327" \
+	"8 370" \
+	"9 356" \
+        "10 325" \
+        "11 360" \
+        "12 309" \
+        "13 350" \
+        "14 381" \
+        "15 423" \
+        "16 399" \
+        "17 456" \
+        "18 342" \
+        "19 322" \
+        "20 309" \
+        "21 359" \
+        "22 323" \
+        "23 399" \
+        "24 334" \
+        "25 417" \
+        "26 360" \
+        "27 392" \
+        "28 336" \
+        "29 332" \
+        "30 339" \
+        "31 377" \
+        "32 331" \
+        "33 335" \
+        "34 327" \
+        "35 304" \
+        "36 419" \
+        "37 385" \
+        "38 334" \
+        "39 369" \
+        "40 371" \
+        "41 664" \
+        "42 343" \
+        "43 390" \
+        "44 392" \
+        "45 335" \
+        "46 550" \
+        "47 336" \
+        "48 426" \
+        "49 361" \
+        "50 439" \
+        "51 330" \
+        "52 385" \
+        "53 378" \
+        "54 391" \
+        "55 338" \
+        "56 338" \
+        "57 354" \
+        "58 440" \
+        "59 339" \
+        "60 410" \
+        "61 395" \
+        "62 337" \
+        "63 333" \
+        "64 388" \
+        "65 485" \
+        "66 326" \
+        "67 325" \
+        "68 364" \
+        "69 327" \
+        "70 350" \
+        "71 313" \
+        "72 343" \
+        "73 371" \
+        "74 329" \
+        "75 342" \
+        "76 347" \
+        "77 326" \
+        "78 326" \
+        "79 371" \
+        "80 377" \
+        "81 391" \
+        "82 323" \
+        "83 312" \
+        "84 364" \
+        "85 367" \
+        "86 415" \
+        "87 329" \
+        "88 334" \
+        "89 403" \
+        "90 318" \
+        "91 312" \
+        "92 502" \
+        "93 343" \
+        "94 323" \
+        "95 392" \
+	"."
+}
+
+## Actually test LIST
+test_list
+
+## Test RETR on an existing message
+pop3d_test "RETR 1" \
+	"+OK" \
+	"Received: (from hare@wonder.land) "\
+	"	by wonder.land id 3301"\
+	"	for alice@wonder.land; Mon, 29 Jul 2002 22:00:06 +0100"\
+	"Date: Mon, 29 Jul 2002 22:00:01 +0100"\
+	"From: March Hare  <hare@wonder.land>"\
+	"Message-Id: <200207292200.3301@wonder.land>"\
+	"To: Alice  <alice@wonder.land>"\
+	"Subject: Invitation"\
+	""\
+        "Have some wine"\
+	""\
+	"."
+
+## Test TOP command
+
+pop3d_test "TOP 48" \
+	"-ERR Invalid arguments"
+
+pop3d_test "TOP 48 2" \
+"+OK" \
+"Received: (from hatter@wonder.land) "\
+"	by wonder.land id 3348"\
+"	for alice@wonder.land; Mon, 29 Jul 2002 22:00:53 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:48 +0100"\
+"From: Hatter  <hatter@wonder.land>"\
+"Message-Id: <200207292200.3348@wonder.land>"\
+"To: Alice  <alice@wonder.land>"\
+"Subject: Re: Discussing Time"\
+"" \
+"It goes on, you know in this way:--" \
+"" \
+"."
+
+pop3d_test "TOP 48 3" \
+"+OK" \
+"Received: (from hatter@wonder.land) "\
+"	by wonder.land id 3348"\
+"	for alice@wonder.land; Mon, 29 Jul 2002 22:00:53 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:48 +0100"\
+"From: Hatter  <hatter@wonder.land>"\
+"Message-Id: <200207292200.3348@wonder.land>"\
+"To: Alice  <alice@wonder.land>"\
+"Subject: Re: Discussing Time"\
+"" \
+"It goes on, you know in this way:--" \
+"" \
+"\"Up above the world you fly," \
+"."
+
+
+pop3d_test "TOP 48 4" \
+"+OK" \
+"Received: (from hatter@wonder.land) "\
+"	by wonder.land id 3348"\
+"	for alice@wonder.land; Mon, 29 Jul 2002 22:00:53 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:48 +0100"\
+"From: Hatter  <hatter@wonder.land>"\
+"Message-Id: <200207292200.3348@wonder.land>"\
+"To: Alice  <alice@wonder.land>"\
+"Subject: Re: Discussing Time"\
+"" \
+"It goes on, you know in this way:--" \
+"" \
+"\"Up above the world you fly," \
+"Like a tea-tray in the sky." \
+"."
+
+pop3d_test "TOP 48 1000" \
+"+OK" \
+"Received: (from hatter@wonder.land) "\
+"	by wonder.land id 3348"\
+"	for alice@wonder.land; Mon, 29 Jul 2002 22:00:53 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:48 +0100"\
+"From: Hatter  <hatter@wonder.land>"\
+"Message-Id: <200207292200.3348@wonder.land>"\
+"To: Alice  <alice@wonder.land>"\
+"Subject: Re: Discussing Time"\
+"" \
+"It goes on, you know in this way:--" \
+"" \
+"\"Up above the world you fly," \
+"Like a tea-tray in the sky." \
+"Twinkle, twinkle--\"'" \
+"."
+
+## Test DELE -- RETR -- RSET -- RETR
+pop3d_test "DELE 2" \
+	"+OK Message 2 marked"
+
+pop3d_test "RETR 2" \
+	"-ERR Message has been deleted"
+
+pop3d_test "RSET" "+OK"
+
+pop3d_test "RETR 2" \
+"+OK" \
+"Received: (from alice@wonder.land) "\
+"	by wonder.land id 3302"\
+"	for hare@wonder.land; Mon, 29 Jul 2002 22:00:07 +0100"\
+"Date: Mon, 29 Jul 2002 22:00:02 +0100"\
+"From: Alice  <alice@wonder.land>"\
+"Message-Id: <200207292200.3302@wonder.land>"\
+"To: March Hare  <hare@wonder.land>"\
+"Subject: Re: Invitation"\
+""\
+"I don't see any wine"\
+""\
+"."
+
+## Delete all messages
+for {set i 1} {$i <= 95} {incr i} {
+    pop3d_test "DELE $i" "+OK Message $i marked"
+}
+
+## This should produce empty output
+pop3d_test "LIST" \
+	"+OK" \
+	"."
+
+## Restore deleted messages
+pop3d_test "RSET" "+OK"
+
+## Test LIST again
+test_list
+
+#end of read.exp

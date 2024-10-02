@@ -1,0 +1,65 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2011-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_SETUP([smtp send from message])
+AT_KEYWORDS([smtp-msg])
+
+AT_DATA([msg],[dnl
+From: mailutils@localhost
+To: gray@example.org
+Subject: SMTP test
+
+Omnis enim res, quae dando non deficit,
+dum habetur et non datur, nondum habetur,
+quomodo habenda est.
+])
+
+AT_DATA([expout],
+[[MSGID: 0001
+DOMAIN: mailutils.org
+SENDER: <mailutils@mailutils.org>
+NRCPT: 1
+RCPT[0]: <gray@example.org>
+LENGTH: 172
+From: mailutils@localhost
+To: gray@example.org
+Subject: SMTP test
+
+Omnis enim res, quae dando non deficit,
+dum habetur et non datur, nondum habetur,
+quomodo habenda est.
+.
+
+]])
+AT_CHECK([
+p=`$abs_top_builddir/testsuite/mockmta -d mta.diag`
+test $? -eq 0 || AT_SKIP_TEST
+set -- $p
+# $1 - port, $2 - pid
+smtpsend localhost port=$1 family=4\
+         from=mailutils@mailutils.org\
+	 rcpt=gray@example.org\
+	 domain=mailutils.org\
+	 input=msg
+kill $2 >/dev/null 2>&1
+cat mta.diag
+],
+[0],
+[expout])
+
+AT_CLEANUP
+
+	 

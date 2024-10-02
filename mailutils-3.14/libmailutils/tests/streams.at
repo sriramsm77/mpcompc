@@ -1,0 +1,43 @@
+# This file is part of GNU Mailutils. -*- Autotest -*-
+# Copyright (C) 2020-2022 Free Software Foundation, Inc.
+#
+# GNU Mailutils is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3, or (at
+# your option) any later version.
+#
+# GNU Mailutils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU Mailutils.  If not, see <http://www.gnu.org/licenses/>.
+
+MU_CHECK([intermixed rw: full buffering],
+         [stream],
+         [t0-stream])
+
+MU_CHECK([intermixed rw: line buffering],
+         [stream],
+         [t1-stream])
+
+MU_CHECK([temporary stream shift up],
+         [stream],
+         [t-streamshift 10 2050])
+
+MU_CHECK([temporary stream shift down],
+         [stream],
+         [t-streamshift 2050 10])
+
+MU_CHECK([getdelim],
+         [stream],
+         [stream-getdelim],
+         [0],
+[0: No buffering
+1: Linear buffering
+2: Linear buffering (small buffer)
+3: Full buffering (big buffer)
+4: Full buffering (moderate buffer)
+5: Full buffering (small buffer)
+])

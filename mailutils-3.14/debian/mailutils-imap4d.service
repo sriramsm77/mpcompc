@@ -1,0 +1,16 @@
+[Unit]
+Description=GNU IMAP4 daemon
+Documentation=info:/usr/share/info/mailutils
+Documentation=man:imap4d(8)
+After=network.target rsyslog.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/imap4d --config-lint
+ExecStart=/usr/sbin/imap4d --daemon
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
