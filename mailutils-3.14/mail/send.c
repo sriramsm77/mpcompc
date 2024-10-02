@@ -1251,23 +1251,8 @@ message_add_date (mu_message_t msg)
     mu_diag_funcall (MU_DIAG_ERROR, "mu_header_set_value", MU_HEADER_DATE, rc);
 }
 
-/* mail_compose_send(): shared between mail_send() and mail_reply();
-
-   If the variable "record" is set, the outgoing message is
-   saved after being sent. If "save_to" argument is non-zero,
-   the name of the save file is derived from "to" argument. Otherwise,
-   it is taken from the value of the "record" variable.
-
-   sendmail
-
-   contains a command, possibly with options, that mailx invokes to send
-   mail. You must manually set the default for this environment variable
-   by editing ROOTDIR/etc/mailx.rc to specify the mail agent of your
-   choice. The default is sendmail, but it can be any command that takes
-   addresses on the command line and message contents on standard input. */
-
-int
-mail_compose_send (compose_env_t *env, int save_to)
+static
+int mail_compose_send__ (compose_env_t *env, int save_to) 
 {
   int done = 0;
   int rc;
@@ -1370,6 +1355,19 @@ mail_compose_send (compose_env_t *env, int save_to)
       mu_stream_flush (env->compstr);
       free (buf);
     }
+
+#ifdef MPC_SUPPORT
+    /* First from the domain mentioned in TO, get the 
+        SRV record. We then parse the SRV record to 
+        determine the number of chunks we need to make
+     */
+    /* env->compstr has the complete body of the email 
+       We will need to split it into required number of chunks */
+    /* After we split the email into chunks, we 
+        add the X-MPC-Via header and send it to 
+        each one of them
+    */
+#endif
 
   /* If interrupted, dump the file to dead.letter.  */
   if (int_cnt)
@@ -1496,6 +1494,31 @@ mail_compose_send (compose_env_t *env, int save_to)
   return 1;
 }
 
+/* mail_compose_send(): shared between mail_send() and mail_reply();
+
+   If the variable "record" is set, the outgoing message is
+   saved after being sent. If "save_to" argument is non-zero,
+   the name of the save file is derived from "to" argument. Otherwise,
+   it is taken from the value of the "record" variable.
+
+   sendmail
+
+   contains a command, possibly with options, that mailx invokes to send
+   mail. You must manually set the default for this environment variable
+   by editing ROOTDIR/etc/mailx.rc to specify the mail agent of your
+   choice. The default is sendmail, but it can be any command that takes
+   addresses on the command line and message contents on standard input. */
+
+int
+mail_compose_send (compose_env_t *env, int save_to)
+{
+#ifdef MPC_SUPPORT
+	return (mpc_mail_compose_send(env, save_to));
+#else
+	return (mail_compose_send__(env, save_to));
+#endif
+}
+
 /* Starting with '|' '/' or not consider addresses and we cheat
    by adding '.' in the mix for none absolute path.  */
 static int
@@ -1549,3 +1572,4 @@ msg_to_pipe (const char *cmd, mu_message_t msg)
     }
   return status;
 }
+
