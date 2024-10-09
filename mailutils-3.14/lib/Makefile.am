@@ -33,6 +33,7 @@ libmuaux_la_SOURCES = \
  signal.c\
  strexit.c\
  mu_umaxtostr.c\
+ srvquery.c\
  mu_umaxtostr.h
 libmuaux_la_LIBADD=gnu/libgnu.la
 libmuaux_la_LDFLAGS = -version-info @VI_CURRENT@:@VI_REVISION@:@VI_AGE@

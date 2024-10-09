@@ -1,9 +1,0 @@
-# libmu_scm/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
-# Configurable variable values for Mailutils test suite.
-# Copyright (C) 2018-2022 Free Software Foundation, Inc.
-
-PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/libmu_scm/tests:$top_srcdir:$srcdir:$PATH
-MAILUTILS_SCM_LIBRARY_ROOT=/home/ubuntu/mailutils/mpcompc/mailutils-3.14
-export MAILUTILS_SCM_LIBRARY_ROOT
-LIBMU_SCM_ROOT=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/libmu_scm/tests/..
-LIBMU_SCM_SRCDIR=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/libmu_scm/tests/..

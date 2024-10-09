@@ -182,6 +182,13 @@ AC_ARG_WITH(tcp-wrappers,
 	[status_tcpwrap=${withval}],
 	[status_tcpwrap=maybe])
 
+UUID_LIB=
+AC_CHECK_LIB(uuid, uuid_generate_random,,[AC_MSG_ERROR([Required library libuuid not found])])
+AC_CHECK_LIB(uuid, uuid_unparse_lower,,[AC_MSG_ERROR([Required library libuuid not found])])
+AC_CHECK_HEADERS(uuid/uuid.h,, [AC_MSG_ERROR([Required header uuid/uuid.h not found])])
+UUID_LIB="$LIBS -luuid"
+LIBS=$UUID_LIB
+
 saved_LIBS=$LIBS
 TCPWRAP_LIBRARIES=
 case $status_tcpwrap in

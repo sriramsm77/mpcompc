@@ -8,7 +8,7 @@
 #include <netdb.h>
 #include <resolv.h>
 
-#include "srvquery.h"
+#include "mailutils/srvquery.h"
 
 int resolveSRV(const char* host, SRVRecord* resolved) {
 	struct __res_state res;

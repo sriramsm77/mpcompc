@@ -79,6 +79,7 @@
 #include <mailutils/io.h>
 #include <mailutils/stdstream.h>
 #include <mailutils/prog.h>
+#include <mailutils/mpc.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,6 +100,8 @@ typedef struct compose_env
 {
   mu_header_t header;   /* The message headers */
   mu_stream_t compstr;  /* Temporary compose stream */
+  int mpc_chunks_count;
+  mu_stream_t mpc_chunks[MAX_MPC_CHUNKS+1]; /* Max number of MPC chunks */
   char **outfiles;      /* Names of the output files. The message is to be
 		           saved in each of these. */
   int nfiles;           /* Number of output files */

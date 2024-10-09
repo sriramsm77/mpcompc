@@ -1,8 +1,0 @@
-# libproto/dotmail/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
-# Configurable variable values for Mailutils test suite.
-# Copyright (C) 2004-2022 Free Software Foundation, Inc.
-
-PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/libproto/dotmail/tests:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/libproto/dotmail/tests/..:$top_srcdir:$srcdir:$PATH
-x_imapbase_normalize() {
-        sed -e '/^X-IMAPbase:/s/  */ /g'
-}

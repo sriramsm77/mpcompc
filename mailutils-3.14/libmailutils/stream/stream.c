@@ -250,7 +250,6 @@ _stream_flush_buffer (struct _mu_stream *stream, int what)
   return 0;
 }
 
-
 mu_stream_t
 _mu_stream_create (size_t size, int flags)
 {

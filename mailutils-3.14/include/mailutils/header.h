@@ -71,7 +71,14 @@ extern "C" {
 #define MU_HEADER_ENVELOPE_TO               "Envelope-To"
 #define MU_HEADER_X_EXPIRE_TIMESTAMP        "X-Expire-Timestamp"
 #define MU_HEADER_USER_AGENT                "User-Agent"
+
+/* X-MPC-Via defines the host as mentioned in the SRV record */
 #define MU_HEADER_MPC_VIA                   "X-MPC-Via"
+/* The X-MPC-ID will be a UUID in the standard UUID format */
+#define MU_HEADER_MPC_CHUNK_ID              "X-MPC-ID"
+/* The X-MPC-Chunk header will be of the format [n/m] */
+#define MU_HEADER_MPC_CHUNK_VALUE           "X-MPC-Chunk"
+
   
 #define MU_HEADER_REPLACE 0x01
 #define MU_HEADER_BEFORE  0x02

@@ -20,12 +20,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef MPC_SUPPORT
+#include <mailutils/stream.h>
+#include <mailutils/srvquery.h>
+#include <mailutils/mpc.h>
+#include <uuid/uuid.h>
+
+static int mpc_mail_compose_send__(compose_env_t *env, int save_to);
+#endif
+
 static int isfilename (const char *);
 static int msg_to_pipe (const char *cmd, mu_message_t msg);
 
 int multipart_alternative;
 
-
 /* Additional message headers */
 struct add_header
 {
@@ -346,7 +354,7 @@ attlist_copy (mu_list_t src)
   mu_list_foreach (src, attlist_helper, dst);
   return dst;
 }
-
+
 static mu_list_t attachment_list;
 
 int
@@ -363,7 +371,7 @@ send_attach_file (int fd,
 			      content_type,
 			      encoding);
 }
-
+
 static void
 report_multipart_type (compose_env_t *env)
 {
@@ -764,8 +772,13 @@ mail_send (int argc, char **argv)
 			    ml_readline_with_intr ("Subject: "),
 			    COMPOSE_REPLACE);
     }
-  
+
+#ifdef MPC_SUPPORT
+  status = mpc_mail_compose_send__ (&env, save_to);
+#else  
   status = mail_compose_send (&env, save_to);
+#endif
+
   compose_destroy (&env);
   return status;
 }
@@ -991,6 +1004,13 @@ compose_header_get (compose_env_t *env, char *name, char *defval)
 void
 compose_destroy (compose_env_t *env)
 {
+
+#ifdef MPC_SUPPORT
+  for (int i=0; i < env->mpc_chunks_count; i++) {
+    mu_stream_destroy (&env->mpc_chunks[i]);
+  }
+#endif
+
   mu_header_destroy (&env->header);
   free (env->outfiles);
   mu_mime_destroy (&env->mime);
@@ -1513,7 +1533,7 @@ int
 mail_compose_send (compose_env_t *env, int save_to)
 {
 #ifdef MPC_SUPPORT
-	return (mpc_mail_compose_send(env, save_to));
+	return (mpc_mail_compose_send__(env, save_to));
 #else
 	return (mail_compose_send__(env, save_to));
 #endif
@@ -1573,3 +1593,456 @@ msg_to_pipe (const char *cmd, mu_message_t msg)
   return status;
 }
 
+#ifdef MPC_SUPPORT
+
+static
+int chunkifyEMailBody(compose_env_t *env, int max_chunks) 
+{
+    int i;
+    mu_off_t size = 0;
+    mu_off_t chunksize = 0;
+    int total_bytes_read = 0;
+    int bytes_to_read = 0;
+    int remaining_bytes_to_read = 0;
+
+    if (mu_stream_seek (env->compstr, 0, MU_SEEK_SET, NULL) != 0) {
+        return(-1);
+    }
+
+    /* Get the size of the body of the email */       
+    if (mu_stream_size (env->compstr, &size) != 0) {
+        return(-1);
+    }
+
+    /* Divide the email body size by the number of chunks to get the size of each chunk */
+    chunksize = size/max_chunks;
+    bytes_to_read = 0;
+    total_bytes_read = 0;
+    remaining_bytes_to_read = (size - total_bytes_read);
+
+    i = 0;
+    while (!mu_stream_eof(env->compstr) && (remaining_bytes_to_read > 0)) {
+        if ((mu_memory_stream_create(&env->mpc_chunks[i], MU_STREAM_RDWR)) != 0) {
+            return (-1);
+        }
+
+        if (remaining_bytes_to_read >= chunksize) {
+            /* Remaining bytes to read is > chunksize, so we read chunksize worth of data */
+            if (i == (max_chunks-1)) {
+                /* Last chunk !! */
+                bytes_to_read = remaining_bytes_to_read;
+            } else {
+                bytes_to_read = chunksize;
+            }
+        } else {
+            /* Read whatever is left */
+            bytes_to_read = remaining_bytes_to_read;
+        }
+
+        if (mu_stream_copy(env->mpc_chunks[i], env->compstr, bytes_to_read, NULL) != 0) {
+            return (-1);
+        }
+
+        {
+            char buf[16384];
+
+            mu_stream_seek (env->mpc_chunks[i], 0, MU_SEEK_SET, NULL);
+            if (!mu_stream_read(env->mpc_chunks[i], &buf, bytes_to_read, NULL)) {
+                fprintf(stderr, "---------------\n");
+                fputs(buf, stderr);
+                fprintf(stderr, "---------------\n");
+            } else {
+                fprintf(stderr, "Error occurred while reading env->mpc_chunks[%d}\n", i);
+            }
+        }
+    
+        total_bytes_read += bytes_to_read;
+        remaining_bytes_to_read = (size - total_bytes_read);
+
+        if (mu_stream_seek(env->compstr, total_bytes_read, MU_SEEK_SET, NULL) != 0) {
+            return (-1);
+        }
+            
+        i++;
+    }
+
+    /* TBD - Need to flag if the loop exited because i > MPC_MAX_CHUNKS */
+    return (i);    
+}
+
+static
+char *getDomainFromEmailAddress(char *email_addr) 
+{
+    int index = 0;
+    char *ret_ptr = NULL;
+
+    index = 0;
+    while (index < strlen(email_addr)) {
+        if (email_addr[index] == '@') {
+            ret_ptr = &email_addr[index + 1];
+            break;
+        }
+        index++;
+    }                
+    return(ret_ptr);
+}
+
+static
+int getSRVRecords(const char *domain, SRVRecord *srvRec, int max_srv_recs) 
+{
+	char srv_record_str[256];
+	int i;
+	SRVRecord temp_srv_rec;
+
+	for (i=0; i < max_srv_recs; i++) {
+
+		memset(&temp_srv_rec, 0, sizeof(SRVRecord));
+		srv_record_str[0] = '\0';
+
+        /* In MPC SRV records, index starts from 1 */
+		snprintf(srv_record_str, sizeof(srv_record_str)-1, "_mpc%d._tcp.%s", (i+1), domain);
+
+        /* Check if an SRV record exists for this */
+		if (resolveSRV(srv_record_str, &temp_srv_rec) == -1) {
+			return (i);
+		} else {
+			/* Ok, we got a SRV record, so save it in the return structure */
+			srvRec[i].priority = temp_srv_rec.priority;
+			srvRec[i].weight   = temp_srv_rec.weight;
+			srvRec[i].port     = temp_srv_rec.port;
+			strncpy(srvRec[i].dname, temp_srv_rec.dname, MAXCDNAME);
+		}
+	}
+
+	return (i);
+}
+
+#if 0
+static int
+mpc_fill_body (mu_message_t msg, mu_stream_t instr)
+{
+    int rc;
+    mu_body_t body = NULL;
+    mu_stream_t stream = NULL;
+    mu_off_t n;
+
+    rc = mu_message_get_body (msg, &body);
+    if (rc) {
+        mu_error (_("cannot get message body: %s"), mu_strerror (rc));
+        return 1;
+    }
+    rc = mu_body_get_streamref (body, &stream);
+    if (rc) {
+        mu_error (_("cannot get body: %s"), mu_strerror (rc));
+        return 1;
+    }
+
+    rc = mu_stream_copy (stream, instr, 0, &n);
+    mu_stream_destroy (&stream);
+
+    if (rc) {
+        mu_error (_("cannot copy temporary stream: %s"), mu_strerror (rc));
+        return 1;
+    }
+
+    if (n == 0) {
+        if (mailvar_is_true (mailvar_name_nullbody)) {
+            char *str;
+            if (mailvar_get (&str, mailvar_name_nullbodymsg,
+            mailvar_type_string, 0) == 0)
+            mu_error ("%s", _(str));
+        } else
+            return 1;
+    }
+
+    return 0;
+}
+#endif
+
+static
+int mpc_mail_compose_send__ (compose_env_t *env, int save_to) 
+{
+	int done = 0;
+	int rc;
+	char *savefile = NULL;
+	int int_cnt;
+	char *escape;
+	int i;
+    char *to_addr = NULL;
+    char *to_domain = NULL;
+    int srv_rec_cnt = 0;
+	SRVRecord srv_recs[MAX_MPC_SERVERS];
+    uuid_t binuuid;
+	char uuid_str[50];  /* The UUID character string is 37 bytes long, so we are good here */
+	char mpc_chunk_value_str[15]; /* 3+3+3+1 = 10 bytes is the length */
+
+	/* Prepare environment */
+	rc = mu_temp_stream_create (&env->compstr, 0);
+	if (rc) {
+		mu_error (_("Cannot open temporary file: %s"), mu_strerror (rc));
+		return 1;
+	}
+
+	for (i=0; i<MAX_MPC_SERVERS; i++) {
+		memset(&srv_recs[i], 0, sizeof(SRVRecord));
+	}
+
+	ml_clear_interrupt ();
+	int_cnt = 0;
+	while (!done) {
+		char *buf;
+		buf = ml_readline (" \b");
+
+		if (ml_got_interrupt ()) {
+			if (buf)
+				free (buf);
+            if (mailvar_is_true (mailvar_name_ignore)) {
+                mu_printf ("@\n");
+            } else {
+                if (++int_cnt == 2)
+                    break;
+                mu_error (_("\n(Interrupt -- one more to kill letter)"));
+            }
+            continue;
+        }
+
+		if (!buf) {
+			if (interactive && mailvar_is_true (mailvar_name_ignoreeof)) {
+				mu_error (mailvar_is_true (mailvar_name_dot) 
+                          ?  _("Use \".\" to terminate letter.") 
+                          : _("Use \"~.\" to terminate letter."));
+				continue;
+			} else
+				break;
+		}
+
+		int_cnt = 0;
+
+		if (strcmp (buf, ".") == 0 && mailvar_is_true (mailvar_name_dot))
+			done = 1;
+		else if (interactive 
+				 && mailvar_get (&escape, mailvar_name_escape, mailvar_type_string, 0) == 0
+	       		 && buf[0] == escape[0]) {
+			if (buf[1] == buf[0])
+				mu_stream_printf (env->compstr, "%s\n", buf + 1);
+			else if (buf[1] == '.')
+				done = 1;
+			else if (buf[1] == 'x') {
+				int_cnt = 2;
+				done = 1;
+			} else {
+				struct mu_wordsplit ws;
+
+				if (mu_wordsplit (buf + 1, &ws, MU_WRDSF_DEFFLAGS) == 0) {
+					if (ws.ws_wordc > 0) {
+						const struct mail_escape_entry *entry = 
+									mail_find_escape (ws.ws_wordv[0]);
+
+						if (entry)
+							(*entry->escfunc) (ws.ws_wordc, ws.ws_wordv, env);
+						else
+							mu_error (_("Unknown escape %s"), ws.ws_wordv[0]);
+					} else
+						mu_error (_("Unfinished escape"));
+					mu_wordsplit_free (&ws);
+				} else {
+					mu_error (_("Cannot parse escape sequence: %s"),
+								  mu_wordsplit_strerror (&ws));
+				}
+	    	}
+		} else
+			mu_stream_printf (env->compstr, "%s\n", buf);
+		mu_stream_flush (env->compstr);
+		free (buf);
+    }
+
+    /* If interrupted, dump the file to dead.letter.  */
+    if (int_cnt) {
+        save_dead_message_env (env);
+        return 1;
+    }
+
+    /* In mailx compatibility mode, ask for Cc and Bcc after editing
+        the body of the message */
+    if (mailvar_is_true (mailvar_name_mailx))
+        read_cc_bcc (env);
+
+    /* First from the domain mentioned in TO, get the 
+        SRV record. We then parse the SRV record to 
+        determine the number of chunks we need to make
+     */
+    if (mu_header_sget_value (env->header, MU_HEADER_TO, (const char **)&to_addr) == 0) { 
+        to_domain = getDomainFromEmailAddress(to_addr);
+        if (to_domain != NULL) {
+            srv_rec_cnt = getSRVRecords(to_domain, srv_recs, MAX_MPC_SERVERS);
+            if (srv_rec_cnt <= 0) {
+                /* MPC SRV records are not configured in the receiver's domain */
+                srv_rec_cnt = 0;
+            }            
+        }
+    } else {
+        return 1;
+    }
+
+    /* env->compstr has the complete body of the email 
+       We will need to split it into required number of chunks 
+    */
+    if (srv_rec_cnt > 0) {
+        /* There is atleast 1 SRV record configured */
+        env->mpc_chunks_count = chunkifyEMailBody(env, srv_rec_cnt);
+    }
+
+    /* Prepare the header */
+    if (mailvar_is_true (mailvar_name_useragent))
+        mu_header_set_value (env->header, MU_HEADER_USER_AGENT, program_version, 1);
+
+    /* After we split the email into chunks, we 
+        add the X-MPC-Via, X-MPC-Chunk-ID and X-MPC-Chunk-Value headers to 
+        each one of them  and then send the message
+       We will do this in the loop below
+    */
+    /*
+     * Generate a UUID. We're not done yet, though,
+     * for the UUID generated is in binary format 
+     * (hence the variable name). We must 'unparse' 
+     * binuuid to get a usable 36-character string.
+     */
+    uuid_generate_random(binuuid);	
+	uuid_unparse_upper(binuuid, uuid_str);
+
+    if (util_header_expand_aliases (&env->header) == 0) {
+        mu_message_t msg = NULL;
+        int status = 0;
+        int sendit = (compose_header_get (env, MU_HEADER_TO, NULL) ||
+                        compose_header_get (env, MU_HEADER_CC, NULL) ||
+                        compose_header_get (env, MU_HEADER_BCC, NULL));
+        int i;
+
+        i = 0;
+        do {
+            status = mu_message_create (&msg, NULL);
+            if (status)
+                break;
+
+            {
+                /* For debugging purpose */
+                char buf[16384];
+                mu_off_t size = 0;
+
+                mu_stream_seek (env->mpc_chunks[i], 0, MU_SEEK_SET, NULL);
+                if (mu_stream_size (env->mpc_chunks[i], &size) != 0) {
+                    return(-1);
+                }
+                if (size > 0) {
+                    if (!mu_stream_read(env->mpc_chunks[i], &buf, size, NULL)) {
+                        fprintf(stderr, "\n---------------------------------\n");
+                        fputs(buf, stderr);
+                        fprintf(stderr, "\n---------------------------------\n");
+                    } else {
+                        fprintf(stderr, "Error occurred while reading env->mpc_chunks[%d}\n", i);
+                    }
+                }
+            }
+
+            mu_stream_seek (env->mpc_chunks[i], 0, MU_SEEK_SET, NULL);
+            status = fill_body (msg, env->mpc_chunks[i]);
+            if (status)
+                break;
+
+            /* Set the MPC Via header to the intermediate email provider */
+            mu_header_set_value (env->header, MU_HEADER_MPC_VIA, srv_recs[i].dname, 1); 
+
+			/* Set the MPC Chunk ID value in the header */
+			mu_header_set_value (env->header, MU_HEADER_MPC_CHUNK_ID, uuid_str, 1);
+			
+			/* Set the MPC Chunk ID value in the header */
+			sprintf(mpc_chunk_value_str, "[%03d/%03d]", i+1, env->mpc_chunks_count);
+			mu_header_set_value (env->header, MU_HEADER_MPC_CHUNK_VALUE , mpc_chunk_value_str, 1);
+	  
+            mu_message_set_header (msg, env->header, NULL);
+
+            if (i == (env->mpc_chunks_count-1)) {
+                /* Attachments are added only to the last chunk */
+                status = add_attachments (env, &msg);
+                if (status)
+                    break;
+            }
+	  
+            message_add_date (msg);
+
+            /* Save outgoing message */
+            if (save_to) {
+                mu_header_t hdr;
+                char const *rcpt;
+
+                mu_message_get_header (msg, &hdr);
+                if (mu_header_sget_value (hdr, MU_HEADER_TO, &rcpt) == 0) {
+                    mu_address_t addr = NULL;
+                    struct mu_address hint = MU_ADDRESS_HINT_INITIALIZER;
+
+                    mu_address_create_hint (&addr, rcpt, &hint, 0);
+                    savefile = util_outfilename (addr);
+                    mu_address_destroy (&addr);
+                }
+            }
+            util_save_outgoing (msg, savefile);
+            if (savefile)
+                free (savefile);
+
+            /* Check if we need to save the message to files or pipes.  */
+            if (env->outfiles) {
+                int i;
+                for (i = 0; i < env->nfiles; i++) {
+                    /* Pipe to a cmd.  */
+                    if (env->outfiles[i][0] == '|')
+                        status = msg_to_pipe (env->outfiles[i] + 1, msg);
+                        /* Save to a file.  */
+                    else {
+                        mu_mailbox_t mbx = NULL;
+                        status = mu_mailbox_create_default (&mbx, env->outfiles[i]);
+                        if (status == 0) {
+                            status = mu_mailbox_open (mbx, MU_STREAM_WRITE | MU_STREAM_CREAT);
+                            if (status == 0) {
+                                status = mu_mailbox_append_message (mbx, msg);
+                                if (status)
+                                    mu_error (_("Cannot append message: %s"),
+                                                mu_strerror (status));
+                                mu_mailbox_close (mbx);
+                            }
+                            mu_mailbox_destroy (&mbx);
+                        }
+                        if (status)
+                            mu_error (_("Cannot create mailbox %s: %s"), 
+                                        env->outfiles[i],
+                                        mu_strerror (status));
+                    }
+                }
+            }
+	  
+            /* Do we need to Send the message on the wire?  */
+            if (status == 0 && sendit) {
+                status = send_message (msg);
+                if (status) {
+                    mu_error (_("cannot send message: %s"),
+                                mu_strerror (status));
+                    save_dead_message (msg);
+                }
+            }
+
+            /* Increment the index */
+            i++;
+
+        } while (i < env->mpc_chunks_count);
+
+        env->header = NULL;
+        mu_stream_destroy (&env->compstr);
+        mu_message_destroy (&msg, NULL);
+        return status;
+    } else
+        save_dead_message_env (env);
+
+    return 1;
+}
+
+
+#endif

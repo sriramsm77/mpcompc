@@ -1,5 +1,0 @@
-# mimeview/tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
-# Configurable variable values for Mailutils test suite.
-
-PATH=/home/ubuntu/mailutils/mpcompc/mailutils-3.14/mimeview/tests:/home/ubuntu/mailutils/mpcompc/mailutils-3.14/mimeview:$top_srcdir:$srcdir:$PATH
-  
