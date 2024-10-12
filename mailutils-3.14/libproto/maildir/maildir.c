@@ -68,6 +68,9 @@
 #include <mailutils/io.h>
 #include <mailutils/cstr.h>
 #include <maildir.h>
+#include <mailutils/mpc.h>
+#include <mailutils/body.h>
+#include <mail/mail.h>
 
 #ifndef PATH_MAX 
 # define PATH_MAX _POSIX_PATH_MAX
@@ -877,7 +880,8 @@ maildir_message_fixup (struct _maildir_data *md, struct _maildir_message *msg)
       md->amd.chattr_msg (&msg->amd_message, 0);
     }
 }
-
+
+
 static int
 maildir_scan_unlocked (mu_mailbox_t mailbox, size_t *pcount, int do_notify)
 {
@@ -899,7 +903,6 @@ maildir_scan_unlocked (mu_mailbox_t mailbox, size_t *pcount, int do_notify)
   rc = maildir_tmp_flush (md);
   if (rc)
     goto err;
-
   /* Scan cur/ */
   rc = maildir_subdir_scan (md, SUB_CUR);
   if (rc)

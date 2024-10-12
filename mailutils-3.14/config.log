@@ -74,7 +74,7 @@ configure:4917: result: x86_64-pc-linux-gnu
 configure:4944: autobuild project... GNU Mailutils
 configure:4950: autobuild revision... 3.14
 configure:4955: autobuild hostname... srirmurt-pfix-left
-configure:4966: autobuild timestamp... 20241009T044244Z
+configure:4966: autobuild timestamp... 20241011T111520Z
 configure:5086: checking for gcc
 configure:5107: found /usr/bin/gcc
 configure:5118: result: gcc
@@ -415,7 +415,7 @@ configure:7136: result: ranlib
 configure:7179: autobuild project... GNU Mailutils
 configure:7185: autobuild revision... 3.14
 configure:7190: autobuild hostname... srirmurt-pfix-left
-configure:7201: autobuild timestamp... 20241009T044245Z
+configure:7201: autobuild timestamp... 20241011T111521Z
 configure:7323: checking for g++
 configure:7344: found /usr/bin/g++
 configure:7355: result: g++
@@ -476,7 +476,8 @@ configure:7743: result: gcc3
 configure:7759: checking whether ln -s works
 configure:7763: result: yes
 configure:7773: checking for bison
-configure:7809: result: $(SHELL) $(top_srcdir)/build-aux/missing bison
+configure:7796: found /usr/bin/bison
+configure:7809: result: /usr/bin/bison
 configure:7820: checking for flex
 configure:7856: result: $(SHELL) $(top_srcdir)/build-aux/missing flex
 configure:7914: checking how to print strings
@@ -1271,7 +1272,7 @@ configure:22074: $? = 0
 configure:22074: result: yes
 configure:22074: checking for mbslen
 configure:22074: gcc -o conftest -g -O2   conftest.c  >&5
-/usr/bin/ld: /tmp/ccHuUJlc.o: in function `main':
+/usr/bin/ld: /tmp/ccwnk3qm.o: in function `main':
 /home/ubuntu/mailutils/mpcompc/mailutils-3.14/conftest.c:83: undefined reference to `mbslen'
 collect2: error: ld returned 1 exit status
 configure:22074: $? = 1
@@ -7080,7 +7081,7 @@ configure: failed program was:
 configure:29944: result: no
 configure:29951: checking for proc_pidinfo
 configure:29951: gcc -o conftest -g  -Wall -Wdeclaration-after-statement -ggdb   conftest.c -luuid -luuid -lresolv  -luuid >&5
-/usr/bin/ld: /tmp/ccBi2MIp.o: in function `main':
+/usr/bin/ld: /tmp/cc0tqGVV.o: in function `main':
 /home/ubuntu/mailutils/mpcompc/mailutils-3.14/conftest.c:271: undefined reference to `proc_pidinfo'
 collect2: error: ld returned 1 exit status
 configure:29951: $? = 1
@@ -16945,251 +16946,171 @@ config.status:2432: creating sieve/Makefile
 config.status:2432: creating mu/Makefile
 config.status:2432: creating mu/libexec/Makefile
 config.status:2432: creating config.h
+config.status:2618: config.h is unchanged
 config.status:2678: linking lib/gnu/gettext.h to include/gettext.h
 config.status:2678: linking libmailutils/wordsplit/wordsplit.h to include/mailutils/sys/wordsplit.h
 config.status:2697: executing depfiles commands
 config.status:2774: cd libproto/imap       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/imap/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/pop       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mh       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mh/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/maildir       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/maildir/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/dotmail       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/dotmail/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd testsuite       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libtests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_auth/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mda/mda/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mh/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd imap4d/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mimeview/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mbox/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mailer/tests       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd sql       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd comsat       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd dotlock       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd examples       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd examples/cpp       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd gint       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd frm       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd imap4d       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd lib       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd lib/gnu       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_auth       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_cpp       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_scm       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_dbm       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_sieve       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmu_sieve/extensions       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mbox       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libproto/mailer       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mda/lib       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mda/lmtpd       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mda/mda       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mda/putmail       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mail       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/auth       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/base       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/address       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/sockaddr       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/cidr       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/cli       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/cfg       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/datetime       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/diag       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/filter       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/imapio       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/list       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/locus       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/mailbox       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/mailcap       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/mailer       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/mime       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/mimetypes       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/msgset       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/opt       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/property       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/server       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/string       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/stream       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/stdstream       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/url       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd libmailutils/wicket       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd messages       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mh       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mimeview       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd movemail       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd pop3d       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd python/libmu_py       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd python/mailutils       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd readmsg       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd decodemail       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd sieve       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mu       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2774: cd mu/libexec       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:2779: $? = 0
 config.status:2697: executing libtool commands
 config.status:2697: executing po-directories commands
@@ -17538,7 +17459,7 @@ ac_cv_member_struct_tm_tm_zone=yes
 ac_cv_member_struct_utmp_ut_name=yes
 ac_cv_member_struct_utmp_ut_user=yes
 ac_cv_objext=o
-ac_cv_path_BISON='$(SHELL) $(top_srcdir)/build-aux/missing bison'
+ac_cv_path_BISON=/usr/bin/bison
 ac_cv_path_EGREP='/usr/bin/grep -E'
 ac_cv_path_FGREP='/usr/bin/grep -F'
 ac_cv_path_FLEX='$(SHELL) $(top_srcdir)/build-aux/missing flex'
@@ -17929,7 +17850,7 @@ AUTOHEADER='${SHELL} '\''/home/ubuntu/mailutils/mpcompc/mailutils-3.14/build-aux
 AUTOM4TE='${SHELL} '\''/home/ubuntu/mailutils/mpcompc/mailutils-3.14/build-aux/missing'\'' autom4te'
 AUTOMAKE='${SHELL} '\''/home/ubuntu/mailutils/mpcompc/mailutils-3.14/build-aux/missing'\'' automake-1.16'
 AWK='gawk'
-BISON='$(SHELL) $(top_srcdir)/build-aux/missing bison'
+BISON='/usr/bin/bison'
 BITSIZEOF_PTRDIFF_T=''
 BITSIZEOF_SIG_ATOMIC_T=''
 BITSIZEOF_SIZE_T=''

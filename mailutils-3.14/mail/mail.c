@@ -18,6 +18,9 @@
 #include "mailutils/cli.h"
 #include "mailutils/mu_auth.h"
 
+#include <mailutils/monitor.h>
+#include <mailutils/mpc.h>
+
 /* Global variables and constants*/
 mu_mailbox_t mbox;            /* Mailbox being operated upon */
 size_t total;                 /* Total number of messages in the mailbox */
@@ -430,6 +433,326 @@ do_and_quit (const char *command)
   exit (rc != 0);
 }
 
+#ifdef MPC_SUPPORT
+
+static int
+_mpc_get_chunk_info (mu_message_t mesg, size_t msgno, mpc_chunk_msg_map_t **chunk_map_head)
+{
+    int rc;
+    char *mpc_chunk_id = NULL;
+    char *mpc_chunk_value_str = NULL;
+    int curr_chunk = 0;
+    int max_chunks = 0;
+    mu_header_t hdr;
+
+    mpc_mbox_info_t *mpc_msg_node = NULL;
+    mpc_mbox_info_t *mpc_msg_prev = NULL;
+    mpc_mbox_info_t *mpc_msg_temp = NULL;
+
+    mpc_chunk_msg_map_t *node = NULL;
+    mpc_chunk_msg_map_t *prev = NULL;
+    mpc_chunk_msg_map_t *temp = NULL;
+
+    /* Get the header list */      
+    mu_message_get_header (mesg, &hdr);
+
+    /* The headers in the email are parsed, let us extract the X-MPC-ID if present */ 
+    rc = mu_header_aget_value_n(hdr, MU_HEADER_MPC_CHUNK_ID, 1, (char **)&mpc_chunk_id);
+    if (rc) {
+        if (rc == MU_ERR_NOENT) {
+            /* This email message does not contain any MPC Chunk ID */
+            fprintf(stderr, "No MPC Chunk ID in the message - %ld \n", msgno);
+            return (0);
+        } else {
+            fprintf(stderr, "Error while checking for X-MPC-Chunk-ID in the message - %ld \n", msgno);
+            return (-1);
+        }
+    } 
+
+    /* Parse the chunk value header and obtain the curr chunk value */
+    rc = mu_header_aget_value_n(hdr, MU_HEADER_MPC_CHUNK_VALUE, 1, (char **)&mpc_chunk_value_str);
+    if (rc) {
+        fprintf(stderr, "Error while getting the MPC chunk value in message %ld \n", msgno);
+        return (-1);
+    } else {
+        sscanf(mpc_chunk_value_str, "[%3d/%3d]", &curr_chunk, &max_chunks);
+        if ((curr_chunk == 0) && (max_chunks == 0)) {
+            /* This is a coalesced message. Nothing to be done here */
+            return (0);
+        }
+    }
+
+    /* So, this message is a MPC fragment and a chunk (not a coalesced one) */
+
+    /* First search for the given MPC Chunk ID in the list */
+    /*  If found, add this message in the appropriate position based on the chunk value */
+    /*  If not found, create a new entry in the hash map and add this message */
+    if (*chunk_map_head == NULL) {
+        *chunk_map_head = (mpc_chunk_msg_map_t *) malloc(sizeof(mpc_chunk_msg_map_t));
+        if (*chunk_map_head == NULL) {
+            fprintf(stderr, "Out of memory!!, bailing out!!\n");
+            return (-1);
+        }
+        (*chunk_map_head)->next = NULL; 
+        (*chunk_map_head)->head = NULL;
+        (*chunk_map_head)->mpc_chunk_id[0] = '\0';
+        (*chunk_map_head)->max_chunks = -1;
+
+        node = *chunk_map_head;
+
+        /* strncpy was giving some memory corruption issues, so had to resort to this */
+        if (strlen(mpc_chunk_id) > sizeof(node->mpc_chunk_id)) 
+            mpc_chunk_id[sizeof(node->mpc_chunk_id)-2] = '\0';
+        strcpy(node->mpc_chunk_id, mpc_chunk_id);
+
+    } else {
+        node = *chunk_map_head;
+        prev = NULL;
+
+        while (node != NULL) {
+            if (strncmp(node->mpc_chunk_id, mpc_chunk_id, sizeof(node->mpc_chunk_id)) == 0) {
+                break;
+            } else {
+                prev = node;
+                node = node->next;
+            }
+        }
+    }
+
+    if (node == NULL) {
+        temp = (mpc_chunk_msg_map_t *) malloc(sizeof(mpc_chunk_msg_map_t));
+        if (temp == NULL) {
+            fprintf(stderr, "Out of memory!!, bailing out!!\n");
+            return (-1);
+        } 
+        temp->next = NULL; 
+        temp->head = NULL;
+        temp->mpc_chunk_id[0] = '\0';
+        temp->max_chunks = -1;
+
+        if (strlen(mpc_chunk_id) > sizeof(temp->mpc_chunk_id)) 
+            mpc_chunk_id[sizeof(temp->mpc_chunk_id)-2] = '\0';
+        strcpy(temp->mpc_chunk_id, mpc_chunk_id);
+        prev->next = temp; 
+        temp->next = NULL;
+        node = temp;
+    }
+
+    /* Parse the chunk value header and obtain the curr chunk value */
+    node->max_chunks = max_chunks;
+
+    /* Create a node and insert it in the map*/
+    mpc_msg_temp = (mpc_mbox_info_t *) malloc(sizeof(mpc_mbox_info_t));                
+    if (mpc_msg_temp == NULL) {
+        fprintf(stderr, "Out of memory!!, bailing out!!\n");
+        return (-1);
+    }
+    mpc_msg_temp->msgno = -1;
+    mpc_msg_temp->chunk_id = -1;
+    mpc_msg_temp->mesg = NULL;
+    mpc_msg_temp->next = NULL; 
+
+    mpc_msg_temp->msgno = msgno;
+    mpc_msg_temp->chunk_id = curr_chunk;
+    mpc_msg_temp->mesg = mesg;
+    
+    /* Insert it in the right spot */
+    if (node->head == NULL) {
+        node->head = mpc_msg_temp;
+    } else {
+        mpc_msg_node = node->head;                   
+        while (mpc_msg_node != NULL) {
+            if (mpc_msg_node->chunk_id > curr_chunk) {
+                break;
+            } else {
+                mpc_msg_prev = mpc_msg_node;
+                mpc_msg_node = mpc_msg_node->next;
+            }
+        }
+        mpc_msg_temp->next = mpc_msg_prev->next;
+        mpc_msg_prev->next = mpc_msg_temp;
+    }
+
+    if (mpc_chunk_id) 
+        free (mpc_chunk_id);
+    if (mpc_chunk_value_str)
+        free (mpc_chunk_value_str);
+
+    return 0;
+}
+
+static int
+maildir_mpc_coaelesce_mails_unlocked (mu_mailbox_t mailbox, size_t total_mesgs)
+{
+    int i;
+    int status;
+
+    mu_header_t hdr;
+    mu_off_t size = 0;
+    mu_message_t mesg;
+
+    mpc_chunk_msg_map_t *head = NULL;    
+    mpc_chunk_msg_map_t *node = NULL;    
+    mpc_chunk_msg_map_t *prev = NULL;    
+
+    mpc_mbox_info_t *first_chunk_node = NULL;
+    mpc_mbox_info_t *chunk_node = NULL;
+
+    mu_body_t first_chunk_body = NULL;
+    mu_body_t chunk_node_body  = NULL;
+
+    mu_stream_t first_chunk_stream = NULL;
+    mu_stream_t chunk_node_stream  = NULL;
+
+    mu_attribute_t attr;
+
+    mu_stream_t new_stream = NULL;
+
+    char mpc_chunk_value_str[20];
+
+    /* First, analyze the headers */
+    for (i=1; i<=total_mesgs; i++) {
+        if (util_get_message (mbox, i, &mesg) == 0) {
+            if (_mpc_get_chunk_info (mesg, i, &head) != 0) {
+                fprintf(stderr, "Got an error while getting chunk info - %d\n", i);
+                continue;
+            }
+        }
+    }
+
+    node = head;
+    while (node != NULL) {
+        first_chunk_node = node->head;
+        chunk_node = first_chunk_node->next;
+
+        /* Get the stream reference of the 1st mesg chunk */
+        if (mu_message_get_body (first_chunk_node->mesg, &first_chunk_body) != 0) {
+            fprintf(stderr, "Could not get message body\n");
+            return (-1);
+        }
+        status = mu_body_get_streamref (first_chunk_body, &first_chunk_stream);
+        if (status) {
+            mu_error (_("get_stream error: %s"), mu_strerror (status));
+            return (-1);
+        }
+
+        /* Create a new email stream */
+        if ((mu_memory_stream_create(&new_stream, MU_STREAM_RDWR)) != 0) {
+            return (-1);
+        }
+
+        mu_stream_seek(first_chunk_stream, 0, MU_SEEK_SET, NULL);
+        mu_stream_seek(new_stream, 0, MU_SEEK_SET, NULL);
+        mu_stream_copy(new_stream, first_chunk_stream, 0, NULL);           
+
+        while (chunk_node != NULL) {
+
+            /* We need to coalesce the chunk_node's body into first_chunk_node's body 
+                and delete the chunk_node mesg */
+            if (mu_message_get_body (chunk_node->mesg, &chunk_node_body) != 0) {
+                fprintf(stderr, "Could not get message body\n");
+                return (-1);
+            }
+            status = mu_body_get_streamref (chunk_node_body, &chunk_node_stream);
+            if (status) {
+                mu_error (_("get_stream error: %s"), mu_strerror (status));
+                return (-1);
+            }
+            mu_stream_seek(chunk_node_stream, 0, MU_SEEK_SET, NULL);
+        
+            if (mu_stream_size (new_stream, &size) != 0) {
+                return(-1);
+            }
+            mu_stream_seek(new_stream, size, MU_SEEK_SET, NULL);
+            mu_stream_copy(new_stream, chunk_node_stream, 0, NULL);           
+
+#if 0
+    /* Shows body of message - enable for debugging */
+            {
+                mu_off_t size;
+                char buf[16384];
+                mu_stream_seek(new_stream, 0, MU_SEEK_SET, NULL);
+                if (mu_stream_size (new_stream, &size) != 0) {
+                    return(-1);
+                }
+                if (size > 0) {
+                    if (!mu_stream_read(new_stream, &buf, size, NULL)) {
+                        fprintf(stderr, "\n---------------------------------\n");
+                        fputs(buf, stderr);
+                        fprintf(stderr, "\n---------------------------------\n");
+                    } else {
+                        fprintf(stderr, "Error occurred while reading env->mpc_chunks[%d}\n", i);
+                    }
+                }
+            }
+#endif
+
+            first_chunk_node->next = chunk_node->next;
+
+            /* Delete the message from the mailbox */
+            mu_body_destroy(&chunk_node_body, chunk_node->mesg);            
+
+            mu_message_get_attribute (chunk_node->mesg, &attr);
+            mu_attribute_set_deleted (attr);
+            mu_attribute_unset_userflag (attr, MAIL_ATTRIBUTE_PRESERVED);
+            cond_page_invalidate (chunk_node->msgno);
+
+            chunk_node->mesg = NULL; /* Do we need to free the mesg? */
+            chunk_node->next = NULL;
+            free(chunk_node);
+            
+            chunk_node = first_chunk_node->next;
+        }
+
+        /* Handle the first node now */
+        /* Delete the old body before setting the body to the new stream */
+        mu_body_destroy(&first_chunk_body, first_chunk_node->mesg);        
+
+        /* We need to modify the MPC Chunk ID value in the header to prevent further coalescing on 
+            an already coalesced email */
+        /* Get the header list */      
+        mu_message_get_header (first_chunk_node->mesg, &hdr);
+
+        /* Set the MPC Chunk ID value in the header to [000/000] indicating 
+            that this is a coalesced email */
+        sprintf(mpc_chunk_value_str, "[%03d/%03d]", 0, 0);
+        mu_header_set_value (hdr, MU_HEADER_MPC_CHUNK_VALUE , mpc_chunk_value_str, 1);
+        mu_message_set_header (first_chunk_node->mesg, hdr, NULL);
+
+        /* First set the first chunk stream to the combined stream */
+        if (mu_body_set_stream(first_chunk_body, new_stream, first_chunk_node->mesg) != 0) {
+            fprintf(stderr, "Could not set the stream of the first email!!\n");
+            return (-1);
+        }
+
+        /* Append this message as a new message */
+        if (mu_mailbox_append_message(mailbox, first_chunk_node->mesg) != 0) {
+            fprintf(stderr, "Could not set the stream of the first email!!\n");
+            return (-1);
+        }
+
+        /* Delete the first message as well, now that the coalesced message has 
+            been added as a new message
+         */
+        mu_message_get_attribute (first_chunk_node->mesg, &attr);
+        mu_attribute_set_deleted (attr);
+        mu_attribute_unset_userflag (attr, MAIL_ATTRIBUTE_PRESERVED);
+        cond_page_invalidate (first_chunk_node->msgno);
+
+        first_chunk_node->mesg = NULL;
+        free (first_chunk_node);
+        node->head = NULL;
+
+        prev = node;
+        node = node->next;
+        free (prev);
+    }
+    head = NULL; 
+
+    return (0);                        
+}
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -662,6 +985,27 @@ main (int argc, char **argv)
 			  mu_url_to_string (url), mu_strerror (rc));
 	      exit (EXIT_FAILURE);
 	    }
+
+#ifdef MPC_SUPPORT
+        /* Coaelesce mails in new/ */
+        //mu_monitor_wrlock (mbox.monitor);
+        rc = maildir_mpc_coaelesce_mails_unlocked (mbox, total);
+        if (rc != 0) {
+            fprintf(stderr, "Unable to coalesce emails\n");
+            exit (EXIT_FAILURE);
+        }
+        //mu_monitor_unlock (mbox.monitor);
+
+	  if ((rc = mu_mailbox_scan (mbox, 1, &total)) != 0)
+	    {
+	      mu_url_t url = NULL;
+	      mu_mailbox_get_url (mbox, &url);
+	      mu_error (_("Cannot read mailbox %s: %s"),
+			  mu_url_to_string (url), mu_strerror (rc));
+	      exit (EXIT_FAILURE);
+	    }
+
+#endif
 
 	  if (strcmp (mode, "exist") == 0)
 	    {
