@@ -74,7 +74,7 @@ configure:4917: result: x86_64-pc-linux-gnu
 configure:4944: autobuild project... GNU Mailutils
 configure:4950: autobuild revision... 3.14
 configure:4955: autobuild hostname... srirmurt-pfix-left
-configure:4966: autobuild timestamp... 20241011T111520Z
+configure:4966: autobuild timestamp... 20241012T152501Z
 configure:5086: checking for gcc
 configure:5107: found /usr/bin/gcc
 configure:5118: result: gcc
@@ -415,7 +415,7 @@ configure:7136: result: ranlib
 configure:7179: autobuild project... GNU Mailutils
 configure:7185: autobuild revision... 3.14
 configure:7190: autobuild hostname... srirmurt-pfix-left
-configure:7201: autobuild timestamp... 20241011T111521Z
+configure:7201: autobuild timestamp... 20241012T152502Z
 configure:7323: checking for g++
 configure:7344: found /usr/bin/g++
 configure:7355: result: g++
@@ -1272,7 +1272,7 @@ configure:22074: $? = 0
 configure:22074: result: yes
 configure:22074: checking for mbslen
 configure:22074: gcc -o conftest -g -O2   conftest.c  >&5
-/usr/bin/ld: /tmp/ccwnk3qm.o: in function `main':
+/usr/bin/ld: /tmp/ccBw7gbR.o: in function `main':
 /home/ubuntu/mailutils/mpcompc/mailutils-3.14/conftest.c:83: undefined reference to `mbslen'
 collect2: error: ld returned 1 exit status
 configure:22074: $? = 1
@@ -7081,7 +7081,7 @@ configure: failed program was:
 configure:29944: result: no
 configure:29951: checking for proc_pidinfo
 configure:29951: gcc -o conftest -g  -Wall -Wdeclaration-after-statement -ggdb   conftest.c -luuid -luuid -lresolv  -luuid >&5
-/usr/bin/ld: /tmp/cc0tqGVV.o: in function `main':
+/usr/bin/ld: /tmp/cclTuve7.o: in function `main':
 /home/ubuntu/mailutils/mpcompc/mailutils-3.14/conftest.c:271: undefined reference to `proc_pidinfo'
 collect2: error: ld returned 1 exit status
 configure:29951: $? = 1

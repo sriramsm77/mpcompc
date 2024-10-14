@@ -78,6 +78,8 @@ extern "C" {
 #define MU_HEADER_MPC_CHUNK_ID              "X-MPC-ID"
 /* The X-MPC-Chunk header will be of the format [n/m] */
 #define MU_HEADER_MPC_CHUNK_VALUE           "X-MPC-Chunk"
+/* X-MPC-Result is a placeholder for computation result to be added */
+#define MU_HEADER_MPC_RESULT                "X-MPC-Result"
 
   
 #define MU_HEADER_REPLACE 0x01

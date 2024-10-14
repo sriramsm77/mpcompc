@@ -19,6 +19,7 @@
 typedef struct _mpc_mbox_info_t_ {
     int  msgno;
     int  chunk_id;
+    char mpc_via[4096]; /* This can get pretty long in a coalesced email */
     mu_message_t mesg; /* The mesg that contains the body of the chunk/email */
     struct _mpc_mbox_info_t_ *next;    
 } mpc_mbox_info_t;

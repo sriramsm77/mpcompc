@@ -1916,6 +1916,9 @@ int mpc_mail_compose_send__ (compose_env_t *env, int save_to)
 			/* Set the MPC Chunk ID value in the header */
 			sprintf(mpc_chunk_value_str, "[%03d/%03d]", i+1, env->mpc_chunks_count);
 			mu_header_set_value (env->header, MU_HEADER_MPC_CHUNK_VALUE , mpc_chunk_value_str, 1);
+
+            /* Set the MPC Result  header to blank */
+            mu_header_set_value (env->header, MU_HEADER_MPC_RESULT, " ", 1); 
 	  
             mu_message_set_header (msg, env->header, NULL);
 

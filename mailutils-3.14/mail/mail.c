@@ -441,6 +441,7 @@ _mpc_get_chunk_info (mu_message_t mesg, size_t msgno, mpc_chunk_msg_map_t **chun
     int rc;
     char *mpc_chunk_id = NULL;
     char *mpc_chunk_value_str = NULL;
+    char *mpc_via_value_str = NULL;
     int curr_chunk = 0;
     int max_chunks = 0;
     mu_header_t hdr;
@@ -481,6 +482,13 @@ _mpc_get_chunk_info (mu_message_t mesg, size_t msgno, mpc_chunk_msg_map_t **chun
             return (0);
         }
     }
+
+    /* Parse the X-MPC-Via header and store the server name */
+    rc = mu_header_aget_value_n(hdr, MU_HEADER_MPC_VIA, 1, (char **)&mpc_via_value_str);
+    if (rc) {
+        fprintf(stderr, "Error while getting the MPC Via value in message %ld \n", msgno);
+        return (-1);
+    } 
 
     /* So, this message is a MPC fragment and a chunk (not a coalesced one) */
 
@@ -549,13 +557,18 @@ _mpc_get_chunk_info (mu_message_t mesg, size_t msgno, mpc_chunk_msg_map_t **chun
     }
     mpc_msg_temp->msgno = -1;
     mpc_msg_temp->chunk_id = -1;
+    mpc_msg_temp->mpc_via[0] = '\0';
     mpc_msg_temp->mesg = NULL;
     mpc_msg_temp->next = NULL; 
 
     mpc_msg_temp->msgno = msgno;
     mpc_msg_temp->chunk_id = curr_chunk;
     mpc_msg_temp->mesg = mesg;
-    
+
+    if (strlen(mpc_via_value_str) > sizeof(mpc_msg_temp->mpc_via)) 
+        mpc_via_value_str[sizeof(mpc_msg_temp->mpc_via)-2] = '\0';
+    strcpy(mpc_msg_temp->mpc_via, mpc_via_value_str);
+
     /* Insert it in the right spot */
     if (node->head == NULL) {
         node->head = mpc_msg_temp;
@@ -577,6 +590,8 @@ _mpc_get_chunk_info (mu_message_t mesg, size_t msgno, mpc_chunk_msg_map_t **chun
         free (mpc_chunk_id);
     if (mpc_chunk_value_str)
         free (mpc_chunk_value_str);
+    if (mpc_via_value_str)
+        free (mpc_via_value_str);
 
     return 0;
 }
@@ -609,6 +624,7 @@ maildir_mpc_coaelesce_mails_unlocked (mu_mailbox_t mailbox, size_t total_mesgs)
     mu_stream_t new_stream = NULL;
 
     char mpc_chunk_value_str[20];
+    char temp_via[8192];
 
     /* First, analyze the headers */
     for (i=1; i<=total_mesgs; i++) {
@@ -666,6 +682,10 @@ maildir_mpc_coaelesce_mails_unlocked (mu_mailbox_t mailbox, size_t total_mesgs)
             mu_stream_seek(new_stream, size, MU_SEEK_SET, NULL);
             mu_stream_copy(new_stream, chunk_node_stream, 0, NULL);           
 
+            /* We coalesce the mpc-via headers as well */
+            snprintf(temp_via, sizeof(temp_via)-2, "%s, %s", first_chunk_node->mpc_via, chunk_node->mpc_via);            
+            strcpy(first_chunk_node->mpc_via, temp_via);
+
 #if 0
     /* Shows body of message - enable for debugging */
             {
@@ -717,6 +737,8 @@ maildir_mpc_coaelesce_mails_unlocked (mu_mailbox_t mailbox, size_t total_mesgs)
             that this is a coalesced email */
         sprintf(mpc_chunk_value_str, "[%03d/%03d]", 0, 0);
         mu_header_set_value (hdr, MU_HEADER_MPC_CHUNK_VALUE , mpc_chunk_value_str, 1);
+        /* Set the mpc via header to the combined value */
+        mu_header_set_value (hdr, MU_HEADER_MPC_VIA, first_chunk_node->mpc_via, 1);
         mu_message_set_header (first_chunk_node->mesg, hdr, NULL);
 
         /* First set the first chunk stream to the combined stream */
