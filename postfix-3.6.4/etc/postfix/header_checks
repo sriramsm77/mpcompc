@@ -1,0 +1,2 @@
+#/^X-MPC-Via:(\s*)(\S+)(\s*)$/ INFO "X-MPC-Via present with host set to $2"
+/^X-MPC-Via:(\s*)(\S+)(\s*)$/ FILTER smtp:$2
