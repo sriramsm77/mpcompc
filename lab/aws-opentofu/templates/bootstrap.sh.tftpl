@@ -1,0 +1,180 @@
+#!/bin/bash
+# MPCoMPC lab: first-boot setup, rendered by OpenTofu for role "${role}" (${fqdn}).
+# Output: /var/log/cloud-init-output.log. Safe to run again.
+#
+#   sender     lab DNS (dnsmasq) + Postfix with the X-MPC-Via header_checks rule
+#              + SMTP submission and Dovecot IMAP for the mail user
+#   relay      plain Postfix relay for the lab network (NO header_checks, or mail would loop)
+#   recipient  Postfix MX for its domain + SMTP submission and Dovecot IMAP for the mail user
+set -euo pipefail
+
+ROLE='${role}'
+FQDN='${fqdn}'
+DOMAIN='${domain}'
+MAIL_USER='${mail_user}'
+MAIL_PASSWORD='${mail_password}'
+VPC_CIDR='${vpc_cidr}'
+VPC_RESOLVER='${vpc_resolver}'
+LAB_DNS_IP='${lab_dns_ip}'
+IP_SENDER='${ip_sender}'
+IP_RELAY_A='${ip_relay_a}'
+IP_RELAY_B='${ip_relay_b}'
+IP_RECIPIENT='${ip_recipient}'
+
+export DEBIAN_FRONTEND=noninteractive
+log() { echo "[mpc-lab] $*"; }
+
+log "Setting up $ROLE ($FQDN)"
+
+# --- Host name --------------------------------------------------------------------------------
+hostnamectl set-hostname "$FQDN"
+mkdir -p /etc/cloud/cloud.cfg.d
+echo "preserve_hostname: true" > /etc/cloud/cloud.cfg.d/99-mpc-lab.cfg
+
+# --- Packages (services are kept stopped until they are configured) ---------------------------
+printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+chmod +x /usr/sbin/policy-rc.d
+
+echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
+echo "postfix postfix/mailname string $FQDN" | debconf-set-selections
+
+PACKAGES="postfix ssl-cert"
+case "$ROLE" in
+  sender)    PACKAGES="$PACKAGES dnsmasq dovecot-core dovecot-imapd swaks libnet-ssleay-perl bind9-dnsutils" ;;
+  recipient) PACKAGES="$PACKAGES dovecot-core dovecot-imapd swaks libnet-ssleay-perl" ;;
+esac
+
+APT="apt-get -o DPkg::Lock::Timeout=600 -y -q"
+$APT update
+# shellcheck disable=SC2086
+$APT install --no-install-recommends $PACKAGES
+
+rm -f /usr/sbin/policy-rc.d
+
+# --- Lab DNS server (sender only) -------------------------------------------------------------
+# Answers for the made-up .test domains; everything else is forwarded to the VPC resolver.
+# The Outlook add-in on your laptop queries this server for the _mpcN._tcp SRV records.
+if [ "$ROLE" = "sender" ]; then
+  cat > /etc/dnsmasq.d/mpc-lab.conf <<EOF
+# MPCoMPC lab zone
+bind-interfaces
+listen-address=$IP_SENDER
+listen-address=127.0.0.1
+no-hosts
+no-resolv
+server=$VPC_RESOLVER
+local=/test/
+domain-needed
+
+host-record=mail.sender.test,$IP_SENDER
+host-record=relay-a.provider-a.test,$IP_RELAY_A
+host-record=relay-b.provider-b.test,$IP_RELAY_B
+host-record=mx.recipient.test,$IP_RECIPIENT
+
+mx-host=sender.test,mail.sender.test,10
+mx-host=recipient.test,mx.recipient.test,10
+
+# One chunk per record: chunk 1 via provider A, chunk 2 via provider B.
+srv-host=_mpc1._tcp.recipient.test,relay-a.provider-a.test,25,10,0
+srv-host=_mpc2._tcp.recipient.test,relay-b.provider-b.test,25,10,0
+EOF
+fi
+
+# --- Use the lab DNS server for *.test; other names keep using the VPC resolver --------------
+mkdir -p /etc/systemd/resolved.conf.d
+cat > /etc/systemd/resolved.conf.d/mpc-lab.conf <<EOF
+[Resolve]
+DNS=$LAB_DNS_IP
+Domains=~test
+EOF
+
+# --- Postfix ----------------------------------------------------------------------------------
+postconf -e \
+  "myhostname=$FQDN" \
+  "mydomain=$DOMAIN" \
+  "inet_interfaces=all" \
+  "inet_protocols=ipv4" \
+  "mynetworks=127.0.0.0/8 $VPC_CIDR" \
+  "smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem" \
+  "smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key" \
+  "smtpd_tls_security_level=may" \
+  "smtp_tls_security_level=may" \
+  "smtpd_relay_restrictions=permit_mynetworks permit_sasl_authenticated defer_unauth_destination"
+
+if [ "$ROLE" = "relay" ]; then
+  # Relays accept mail from the lab network and pass it on by normal MX lookup.
+  postconf -e "myorigin=\$myhostname" "mydestination=localhost"
+else
+  postconf -e \
+    "myorigin=\$mydomain" \
+    "mydestination=\$mydomain, \$myhostname, localhost" \
+    "home_mailbox=Maildir/"
+
+  # Authenticated submission on port 587 for Outlook (passwords checked by Dovecot).
+  postconf -M "submission/inet=submission inet n - y - - smtpd"
+  postconf -P \
+    "submission/inet/syslog_name=postfix/submission" \
+    "submission/inet/smtpd_tls_security_level=encrypt" \
+    "submission/inet/smtpd_tls_auth_only=yes" \
+    "submission/inet/smtpd_sasl_auth_enable=yes" \
+    "submission/inet/smtpd_sasl_type=dovecot" \
+    "submission/inet/smtpd_sasl_path=private/auth" \
+    "submission/inet/smtpd_client_restrictions=permit_sasl_authenticated,reject" \
+    "submission/inet/smtpd_relay_restrictions=permit_sasl_authenticated,reject"
+fi
+
+if [ "$ROLE" = "sender" ]; then
+  # The rule from postfix-3.6.4/etc/postfix/header_checks in sriramsm77/mpcompc: route each
+  # chunk through the relay named in its X-MPC-Via header. Only the sending MTA may have it;
+  # on a relay or the recipient's MX it would send the chunk round in a loop.
+  cat > /etc/postfix/header_checks <<'EOF'
+/^X-MPC-Via:(\s*)(\S+)(\s*)$/ FILTER smtp:$2
+EOF
+  postconf -e "header_checks=regexp:/etc/postfix/header_checks"
+fi
+
+# --- Dovecot (IMAP for Outlook, and password checks for SMTP submission) ----------------------
+if [ "$ROLE" != "relay" ]; then
+  cat > /etc/dovecot/conf.d/99-mpc-lab.conf <<'EOF'
+listen = *
+mail_location = maildir:~/Maildir
+ssl = required
+ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
+disable_plaintext_auth = yes
+auth_mechanisms = plain login
+
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    user = postfix
+    group = postfix
+  }
+}
+EOF
+
+  # The mail account Outlook logs in with. SSH password logins stay disabled.
+  id "$MAIL_USER" >/dev/null 2>&1 || useradd --create-home --shell /usr/sbin/nologin "$MAIL_USER"
+  echo "$MAIL_USER:$MAIL_PASSWORD" | chpasswd
+fi
+
+# --- Check the configuration and start everything ---------------------------------------------
+postfix check
+[ "$ROLE" = "relay" ] || doveconf -n > /dev/null
+[ "$ROLE" != "sender" ] || dnsmasq --test
+
+systemctl restart systemd-resolved
+if [ "$ROLE" = "sender" ]; then
+  systemctl enable dnsmasq
+  systemctl restart dnsmasq
+fi
+if [ "$ROLE" != "relay" ]; then
+  systemctl enable dovecot
+  systemctl restart dovecot
+fi
+systemctl enable postfix
+systemctl restart postfix
+
+mkdir -p /var/lib/mpc-lab
+date -u > /var/lib/mpc-lab/ready
+log "Done: $ROLE ($FQDN) is ready"

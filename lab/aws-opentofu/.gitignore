@@ -1,0 +1,7 @@
+# OpenTofu / Terraform working files: never commit state (it holds the mail passwords) or tfvars
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+terraform.tfvars
