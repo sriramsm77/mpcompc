@@ -58,7 +58,7 @@ namespace MpcOutlookAddIn
         private void ThisAddIn_Startup(object sender, EventArgs e)
         {
             Sender = new OutlookMpcSender(Application, () => Settings, CreateResolver);
-            Receiver = new OutlookMpcReceiver(() => Settings);
+            Receiver = new OutlookMpcReceiver(Application, () => Settings);
 
             Application.ItemSend += new Outlook.ApplicationEvents_11_ItemSendEventHandler(Application_ItemSend);
             Application.NewMailEx += new Outlook.ApplicationEvents_11_NewMailExEventHandler(Application_NewMailEx);
