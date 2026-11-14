@@ -11,10 +11,10 @@ namespace MpcOutlookAddIn
     /// The sending side of MPC: port of mpc_mail_compose_send__() in send.c.
     /// <para>
     /// For a message whose first To recipient's domain publishes _mpc1._tcp / _mpc2._tcp SRV
-    /// records, the plain-text body is split into one chunk per server. Chunks 1..N-1 are sent
-    /// as new messages, and the message being sent becomes chunk N, which keeps the attachments
-    /// (send.c attaches them only to the last chunk). Every chunk carries X-MPC-Via, X-MPC-ID,
-    /// X-MPC-Chunk and X-MPC-Result.
+    /// records, the plain-text body is split into one chunk per server. Each chunk is sent as a
+    /// copy of the (saved) message, with X-MPC-Via, X-MPC-ID, X-MPC-Chunk and X-MPC-Result; only
+    /// the last chunk keeps the attachments, as in send.c. The original message is then closed
+    /// and its draft moved to Deleted Items.
     /// </para>
     /// </summary>
     internal sealed class OutlookMpcSender
@@ -40,8 +40,8 @@ namespace MpcOutlookAddIn
             /// <summary>No MPC servers for this recipient: send the message unchanged.</summary>
             SendNormally,
 
-            /// <summary>Chunks 1..N-1 are sent and the message is now chunk N: let it go.</summary>
-            SendAsLastChunk,
+            /// <summary>Every chunk has been sent: don't send the original, discard it.</summary>
+            SentAsChunks,
 
             /// <summary>Do not send.</summary>
             Cancel,
@@ -60,7 +60,16 @@ namespace MpcOutlookAddIn
                 if (!_settings().AutoSplitOnSend) return;
                 if (OutlookMpc.GetInternetHeader(mail, MpcConstants.HeaderChunkId) != null) return; // already a chunk
 
-                if (Prepare(mail, false) == Outcome.Cancel) cancel = true;
+                Outcome outcome = Prepare(mail, false);
+                if (outcome == Outcome.Cancel)
+                {
+                    cancel = true;
+                }
+                else if (outcome == Outcome.SentAsChunks)
+                {
+                    cancel = true; // the chunks went out instead of this message
+                    DiscardOriginalLater(mail);
+                }
             }
             catch (Exception ex)
             {
@@ -83,17 +92,7 @@ namespace MpcOutlookAddIn
                     return;
                 }
 
-                if (Prepare(mail, true) != Outcome.SendAsLastChunk) return;
-
-                _sendingChunks = true;
-                try
-                {
-                    ((Outlook._MailItem)mail).Send();
-                }
-                finally
-                {
-                    _sendingChunks = false;
-                }
+                if (Prepare(mail, true) == Outcome.SentAsChunks) DiscardOriginalLater(mail);
             }
             catch (Exception ex)
             {
@@ -155,17 +154,25 @@ namespace MpcOutlookAddIn
 
             if (!ConfirmOtherDomains(mail, domain)) return Outcome.Cancel;
 
-            string mpcId = MpcSendPlanner.NewMpcId();
-            IReadOnlyList<OutgoingChunk> chunks = MpcSendPlanner.Plan(mail.Body ?? string.Empty, servers, mpcId);
-            AddInLog.Write("Splitting message for " + domain + " into " + chunks.Count + " chunk(s), X-MPC-ID " + mpcId +
-                           ", via " + string.Join(", ", chunks.Select(c => c.Via)));
+            // While a message is open for editing, Outlook only copies the editor's contents into
+            // the item when it is saved. Without this, Body can come back empty or out of date.
+            mail.Save();
+            string body = mail.Body ?? string.Empty;
 
-            // 1. Build chunks 1..N-1 as new messages. Nothing has been sent yet, so on failure
-            //    they are discarded and the original message is left untouched.
+            string mpcId = MpcSendPlanner.NewMpcId();
+            IReadOnlyList<OutgoingChunk> chunks = MpcSendPlanner.Plan(body, servers, mpcId);
+            AddInLog.Write("Splitting a " + body.Length + "-character message for " + domain + " into " + chunks.Count +
+                           " chunk(s) of " + string.Join(" + ", chunks.Select(c => c.Body.Length.ToString())) +
+                           " characters, X-MPC-ID " + mpcId + ", via " + string.Join(", ", chunks.Select(c => c.Via)));
+
+            // 1. Build every chunk as a copy of the saved message. The copy keeps recipients,
+            //    subject, account and attachments; and unlike the message open in the editor,
+            //    changes to it are not overwritten when it is sent. Nothing has been sent yet,
+            //    so on failure the copies are discarded and the original is left untouched.
             var created = new List<Outlook.MailItem>();
             try
             {
-                foreach (OutgoingChunk chunk in chunks.Take(chunks.Count - 1))
+                foreach (OutgoingChunk chunk in chunks)
                 {
                     created.Add(CreateChunkMessage(mail, chunk));
                 }
@@ -204,65 +211,109 @@ namespace MpcOutlookAddIn
                 foreach (Outlook.MailItem item in created) OutlookMpc.Release(item);
             }
 
-            // 3. Turn the message being sent into the last chunk. The other chunks are already
-            //    out, so on failure stop here rather than offering to send the full text.
+            return Outcome.SentAsChunks;
+        }
+
+        /// <summary>
+        /// After every chunk has gone out, closes the original message's window and moves its
+        /// saved draft to Deleted Items. Runs a moment later, because Outlook doesn't allow
+        /// closing the window from inside ItemSend or a ribbon callback.
+        /// </summary>
+        private void DiscardOriginalLater(Outlook.MailItem mail)
+        {
+            string entryId = null;
             try
             {
-                ApplyChunk(mail, chunks[chunks.Count - 1]);
+                entryId = mail.EntryID;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                AddInLog.Write("Preparing the last MPC chunk failed", ex);
-                MessageBox.Show(
-                    "Chunks 1 to " + (chunks.Count - 1) + " of " + chunks.Count + " were sent, but the last chunk " +
-                    "could not be prepared:\n\n" + ex.Message + "\n\nYour message has not been sent.",
-                    Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return Outcome.Cancel;
+                // not saved; nothing to delete afterwards
             }
-            return Outcome.SendAsLastChunk;
+
+            var timer = new Timer { Interval = 200 };
+            timer.Tick += (sender, e) =>
+            {
+                timer.Stop();
+                timer.Dispose();
+
+                try
+                {
+                    ((Outlook._MailItem)mail).Close(Outlook.OlInspectorClose.olDiscard);
+                }
+                catch (Exception ex)
+                {
+                    AddInLog.Write("Could not close the original message window", ex);
+                }
+
+                if (string.IsNullOrEmpty(entryId)) return;
+                Outlook.NameSpace session = null;
+                try
+                {
+                    session = _application.Session;
+                    var draft = session.GetItemFromID(entryId, Type.Missing) as Outlook.MailItem;
+                    if (draft != null)
+                    {
+                        draft.Delete();
+                        OutlookMpc.Release(draft);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AddInLog.Write("Could not remove the original draft after sending its MPC chunks", ex);
+                }
+                finally
+                {
+                    OutlookMpc.Release(session);
+                }
+            };
+            timer.Start();
         }
 
         private Outlook.MailItem CreateChunkMessage(Outlook.MailItem original, OutgoingChunk chunk)
         {
-            var item = (Outlook.MailItem)_application.CreateItem(Outlook.OlItemType.olMailItem);
-
-            Outlook.Account account = original.SendUsingAccount;
-            if (account != null)
-            {
-                item.SendUsingAccount = account;
-                OutlookMpc.Release(account);
-            }
-
-            if (!string.IsNullOrEmpty(original.SentOnBehalfOfName)) item.SentOnBehalfOfName = original.SentOnBehalfOfName;
-            item.Subject = original.Subject;
-            item.Importance = original.Importance;
-            item.Sensitivity = original.Sensitivity;
-
-            Outlook.Recipients sourceRecipients = original.Recipients;
-            Outlook.Recipients targetRecipients = item.Recipients;
+            // A copy of the saved original keeps its recipients, subject, importance and
+            // attachments exactly. It lands in Drafts until it is sent.
+            var item = (Outlook.MailItem)original.Copy();
             try
             {
-                foreach (Outlook.Recipient source in sourceRecipients)
+                Outlook.Account account = original.SendUsingAccount;
+                if (account != null)
                 {
-                    Outlook.Recipient copy = targetRecipients.Add(OutlookMpc.GetSmtpAddress(source));
-                    copy.Type = source.Type;
-                    OutlookMpc.Release(copy);
-                    OutlookMpc.Release(source);
+                    item.SendUsingAccount = account;
+                    OutlookMpc.Release(account);
                 }
 
-                if (!targetRecipients.ResolveAll())
+                // As in send.c, only the last chunk carries the attachments.
+                if (!chunk.CarriesAttachments) RemoveAttachments(item);
+
+                ApplyChunk(item, chunk);
+                item.Save();
+                return item;
+            }
+            catch (Exception)
+            {
+                Discard(item);
+                throw;
+            }
+        }
+
+        private static void RemoveAttachments(Outlook.MailItem item)
+        {
+            Outlook.Attachments attachments = item.Attachments;
+            try
+            {
+                for (int i = attachments.Count; i >= 1; i--)
                 {
-                    throw new InvalidOperationException("Outlook could not resolve all recipients for MPC chunk " + chunk.Chunk + ".");
+                    Outlook.Attachment attachment = attachments[i];
+                    attachment.Delete();
+                    OutlookMpc.Release(attachment);
                 }
             }
             finally
             {
-                OutlookMpc.Release(sourceRecipients);
-                OutlookMpc.Release(targetRecipients);
+                OutlookMpc.Release(attachments);
             }
-
-            ApplyChunk(item, chunk);
-            return item;
         }
 
         private static void ApplyChunk(Outlook.MailItem mail, OutgoingChunk chunk)

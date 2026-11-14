@@ -73,10 +73,12 @@ What happens when a message is split:
 
 1. The body is sent as **plain text**, because the chunks are byte ranges of the text, which is what
    mailutils sends and rejoins. Formatting is dropped.
-2. Chunks 1 to N−1 are sent as new messages to the same recipients, with the same subject and
-   sending account.
-3. The message you're sending becomes chunk N and keeps the attachments. `send.c` also attaches
-   files only to the last chunk.
+2. The add-in saves your message, then sends each chunk as a **copy** of it, with the same
+   recipients, subject and sending account. Only the last chunk keeps the attachments; `send.c`
+   also attaches files only to the last chunk. (The message open in the editor isn't changed
+   itself, because Outlook would overwrite those changes with the editor's contents when sending.)
+3. Your original message isn't sent. Its window closes and its draft moves to **Deleted Items**.
+   **Sent Items** shows the chunks.
 4. If other recipients are at a different domain, the add-in asks first. Every chunk goes to every
    recipient, routed by the first To recipient's MPC servers, as in `send.c`.
 
