@@ -2,7 +2,7 @@
 #
 #   mta-sender    mail.green.mpc           green.mpc mail server (alice) + lab DNS (dnsmasq)
 #   mx-recipient  mx.blue.mpc              blue.mpc mail server (bob)
-#   relay-a .. d  relay-X.provider-X.test  relays; a <-> c and b <-> d are linked
+#   relay-a .. d  relay.provider-a.test .. relay.provider-d.test; a <-> c and b <-> d are linked
 #
 # Each mail domain publishes its own two entry relays as _mpc1/_mpc2._tcp SRV records:
 #
@@ -16,7 +16,8 @@
 #
 # Both mail servers apply the X-MPC-Via rule to mail their users submit (port 587).
 # Mail between the servers stays on private addresses inside the VPC.
-# green.mpc and blue.mpc exist only in the lab DNS; the servers never ask the internet about them.
+# All lab names (green.mpc, blue.mpc, provider-a.test .. provider-d.test) exist only in the lab DNS; the servers
+# never ask the internet about them.
 
 locals {
   hosts = {
@@ -32,7 +33,7 @@ locals {
     "relay-a" = {
       subnet     = 2
       role       = "relay"
-      fqdn       = "relay-a.provider-a.test"
+      fqdn       = "relay.provider-a.test"
       domain     = "provider-a.test"
       mail_user  = ""
       lab_dns    = false
@@ -41,7 +42,7 @@ locals {
     "relay-b" = {
       subnet     = 3
       role       = "relay"
-      fqdn       = "relay-b.provider-b.test"
+      fqdn       = "relay.provider-b.test"
       domain     = "provider-b.test"
       mail_user  = ""
       lab_dns    = false
@@ -59,7 +60,7 @@ locals {
     "relay-c" = {
       subnet     = 5
       role       = "relay"
-      fqdn       = "relay-c.provider-c.test"
+      fqdn       = "relay.provider-c.test"
       domain     = "provider-c.test"
       mail_user  = ""
       lab_dns    = false
@@ -68,7 +69,7 @@ locals {
     "relay-d" = {
       subnet     = 6
       role       = "relay"
-      fqdn       = "relay-d.provider-d.test"
+      fqdn       = "relay.provider-d.test"
       domain     = "provider-d.test"
       mail_user  = ""
       lab_dns    = false
@@ -108,9 +109,13 @@ locals {
   # Mail domain => its mail server's name (also its MX).
   mail_domains = { for k, h in local.hosts : h.domain => h.fqdn if h.role == "mailhost" }
 
-  # dnsmasq lines for the lab zone: A, MX and the MPC SRV records.
+  # Every domain used in the lab (mail domains and relay provider domains).
+  lab_domains = sort(distinct([for h in values(local.hosts) : h.domain]))
+
+  # dnsmasq lines for the lab zone: A, MX and the MPC SRV records. "local=" makes dnsmasq answer
+  # for a domain itself and never forward it.
   lab_dns_records = join("\n", concat(
-    [for d in sort(keys(local.mail_domains)) : "local=/${d}/"],
+    [for d in local.lab_domains : "local=/${d}/"],
     [for k in sort(keys(local.hosts)) : "host-record=${local.hosts[k].fqdn},${local.private_ip[k]}"],
     [for d in sort(keys(local.mail_domains)) : "mx-host=${d},${local.mail_domains[d]},10"],
     flatten([
@@ -121,7 +126,7 @@ locals {
   ))
 
   # systemd-resolved routing domains: these names are always looked up on the lab DNS server.
-  lab_dns_domains = join(" ", concat(["~test"], [for d in sort(keys(local.mail_domains)) : "~${d}"]))
+  lab_dns_domains = join(" ", [for d in local.lab_domains : "~${d}"])
 
   az   = sort(data.aws_ec2_instance_type_offerings.this.locations)[0]
   arch = contains(data.aws_ec2_instance_type.this.supported_architectures, "arm64") ? "arm64" : "amd64"
@@ -276,6 +281,7 @@ resource "aws_security_group" "mail_client" {
 # The Outlook add-in on your laptop looks up the _mpcN._tcp SRV records on the lab DNS server.
 resource "aws_security_group" "lab_dns" {
   name        = "${var.name_prefix}-lab-dns"
+  # Kept as first created: AWS can't change a security group's description in place.
   description = "Lab DNS (SRV/MX/A records for the .test domains) from the admin laptop"
   vpc_id      = aws_vpc.lab.id
 

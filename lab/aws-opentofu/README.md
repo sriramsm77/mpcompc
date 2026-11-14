@@ -18,10 +18,10 @@ at the destination's n-th relay, which hands it to its linked partner, which del
 
 | SRV record | Target | Priority |
 |---|---|---|
-| `_mpc1._tcp.blue.mpc` | `relay-a.provider-a.test` | 10 |
-| `_mpc2._tcp.blue.mpc` | `relay-b.provider-b.test` | 11 |
-| `_mpc1._tcp.green.mpc` | `relay-c.provider-c.test` | 10 |
-| `_mpc2._tcp.green.mpc` | `relay-d.provider-d.test` | 11 |
+| `_mpc1._tcp.blue.mpc` | `relay.provider-a.test` | 10 |
+| `_mpc2._tcp.blue.mpc` | `relay.provider-b.test` | 11 |
+| `_mpc1._tcp.green.mpc` | `relay.provider-c.test` | 10 |
+| `_mpc2._tcp.green.mpc` | `relay.provider-d.test` | 11 |
 
 | Direction | Chunk 1 | Chunk 2 |
 |---|---|---|
@@ -32,10 +32,10 @@ at the destination's n-th relay, which hands it to its linked partner, which del
 |---|---|---|---|
 | `mta-sender` | `mail.green.mpc` | 10.20.1.10 | green.mpc mail server (alice) + lab DNS |
 | `mx-recipient` | `mx.blue.mpc` | 10.20.4.10 | blue.mpc mail server (bob) |
-| `relay-a` | `relay-a.provider-a.test` | 10.20.2.10 | entry relay for blue.mpc; linked to relay-c |
-| `relay-b` | `relay-b.provider-b.test` | 10.20.3.10 | entry relay for blue.mpc; linked to relay-d |
-| `relay-c` | `relay-c.provider-c.test` | 10.20.5.10 | entry relay for green.mpc; linked to relay-a |
-| `relay-d` | `relay-d.provider-d.test` | 10.20.6.10 | entry relay for green.mpc; linked to relay-b |
+| `relay-a` | `relay.provider-a.test` | 10.20.2.10 | entry relay for blue.mpc; linked to relay-c |
+| `relay-b` | `relay.provider-b.test` | 10.20.3.10 | entry relay for blue.mpc; linked to relay-d |
+| `relay-c` | `relay.provider-c.test` | 10.20.5.10 | entry relay for green.mpc; linked to relay-a |
+| `relay-d` | `relay.provider-d.test` | 10.20.6.10 | entry relay for green.mpc; linked to relay-b |
 
 How the pieces fit:
 
@@ -113,9 +113,9 @@ Open a chunk in Outlook, go to **File → Properties**, and read the `Received:`
 **Internet headers** from the bottom up. For chunk 1 from alice to bob there are four hops:
 
 ```
-by mx.blue.mpc             from relay-c.provider-c.test [10.20.5.10]
-by relay-c.provider-c.test from relay-a.provider-a.test [10.20.2.10]
-by relay-a.provider-a.test from mail.green.mpc [10.20.1.10]
+by mx.blue.mpc             from relay.provider-c.test [10.20.5.10]
+by relay.provider-c.test from relay.provider-a.test [10.20.2.10]
+by relay.provider-a.test from mail.green.mpc [10.20.1.10]
 by mail.green.mpc          from your laptop (ESMTPSA = alice logged in)
 ```
 
@@ -125,8 +125,8 @@ four routes. On any server (EC2 console → instance → **Connect → Session M
 
 | Server | alice → bob | bob → alice |
 |---|---|---|
-| `mta-sender` / `mx-recipient` (sending side) | `relay=relay-a…[10.20.2.10]` and `relay=relay-b…[10.20.3.10]` | `relay=relay-c…[10.20.5.10]` and `relay=relay-d…[10.20.6.10]` |
-| entry relay | relay-a → `relay=relay-c…`, relay-b → `relay=relay-d…` | relay-c → `relay=relay-a…`, relay-d → `relay=relay-b…` |
+| `mta-sender` / `mx-recipient` (sending side) | `relay=relay.provider-a.test[10.20.2.10]` and `relay=relay.provider-b.test[10.20.3.10]` | `relay=relay.provider-c.test[10.20.5.10]` and `relay=relay.provider-d.test[10.20.6.10]` |
+| entry relay | relay-a → `relay=relay.provider-c.test`, relay-b → `relay=relay.provider-d.test` | relay-c → `relay=relay.provider-a.test`, relay-d → `relay=relay.provider-b.test` |
 | partner relay | relay-c / relay-d → `relay=mx.blue.mpc[10.20.4.10]` | relay-a / relay-b → `relay=mail.green.mpc[10.20.1.10]` |
 | receiving mail server | `to=<bob@blue.mpc>, relay=local … delivered to maildir` | `to=<alice@green.mpc>, relay=local …` |
 

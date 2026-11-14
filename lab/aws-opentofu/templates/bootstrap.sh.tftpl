@@ -56,8 +56,8 @@ $APT install --no-install-recommends $PACKAGES
 rm -f /usr/sbin/policy-rc.d
 
 # --- Lab DNS server ---------------------------------------------------------------------------
-# Answers for the lab domains (the mail domains and the *.test relay names) and never forwards
-# those names; everything else goes to the VPC resolver. The Outlook add-in on your laptop
+# Answers for the lab domains (the mail domains and the relay provider domains) and never
+# forwards those names; everything else goes to the VPC resolver. The Outlook add-in on your laptop
 # queries this server for the _mpcN._tcp SRV records.
 if [ "$RUN_LAB_DNS" = "yes" ]; then
   cat > /etc/dnsmasq.d/mpc-lab.conf <<EOF
@@ -68,7 +68,6 @@ listen-address=127.0.0.1
 no-hosts
 no-resolv
 server=$VPC_RESOLVER
-local=/test/
 domain-needed
 
 ${lab_dns_records}
