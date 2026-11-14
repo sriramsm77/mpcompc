@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The X-MPC logic with no Outlook dependencies. The VSTO add-in compiles these source files
+    in directly (see MpcOutlookAddIn.csproj), so this project exists for the tests and for reuse.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>Mpc.Core</RootNamespace>
+    <AssemblyName>Mpc.Core</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

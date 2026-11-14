@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab idMso="TabNewMailMessage">
+        <group id="MpcComposeGroup" label="MPC">
+          <button id="MpcSendButton"
+                  label="Send via MPC"
+                  size="large"
+                  imageMso="EncryptMessage"
+                  screentip="Send via MPC"
+                  supertip="Splits this message into chunks, one per MPC server published by the recipient's domain (_mpc1._tcp, _mpc2._tcp SRV records), adds the X-MPC-* headers, and sends them. The message is sent as plain text."
+                  onAction="OnSendViaMpc" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
