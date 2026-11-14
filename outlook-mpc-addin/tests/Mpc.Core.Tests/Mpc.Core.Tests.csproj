@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Dependency-free test runner for Mpc.Core. Run it with: dotnet run (project tests/Mpc.Core.Tests).
+    The core sources are compiled in directly (as the add-in does) and held to C# 7.3, the
+    language version of a .NET Framework 4.8 VSTO project.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Mpc.Core.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Mpc.Core\**\*.cs" Exclude="..\..\src\Mpc.Core\obj\**;..\..\src\Mpc.Core\bin\**">
+      <Link>Core\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>

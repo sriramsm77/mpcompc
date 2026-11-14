@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab idMso="TabMail">
+        <group id="MpcExplorerGroup" label="MPC">
+          <button id="MpcRejoinButton"
+                  label="Rejoin MPC Chunks"
+                  size="large"
+                  imageMso="MergeCells"
+                  screentip="Rejoin MPC chunks in this folder"
+                  supertip="Finds messages with X-MPC-* headers in the current folder and joins each complete set of chunks into one message. Sets with chunks still missing are left alone."
+                  onAction="OnRejoinFolder" />
+          <toggleButton id="MpcAutoSplitToggle"
+                        label="Split on Send"
+                        imageMso="SplitCells"
+                        screentip="Split outgoing mail automatically"
+                        supertip="When the first To recipient's domain publishes _mpc1._tcp / _mpc2._tcp SRV records, split the message into chunks sent through those servers."
+                        getPressed="GetPressed"
+                        onAction="OnToggle" />
+          <toggleButton id="MpcAutoRejoinToggle"
+                        label="Rejoin New Mail"
+                        imageMso="MergeCells"
+                        screentip="Rejoin chunks as they arrive"
+                        supertip="Check the Inbox for complete sets of MPC chunks at startup and whenever new mail arrives."
+                        getPressed="GetPressed"
+                        onAction="OnToggle" />
+          <button id="MpcSettingsButton"
+                  label="MPC Settings"
+                  imageMso="FileOpen"
+                  screentip="Open the MPC settings file"
+                  supertip="Opens settings.ini, where you can set DNS servers for the SRV lookups, how many days of mail to scan, and whether rejoined chunks are deleted. Restart Outlook after editing it."
+                  onAction="OnOpenSettings" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
