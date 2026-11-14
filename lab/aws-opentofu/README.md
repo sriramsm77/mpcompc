@@ -116,6 +116,33 @@ green.mpc is asked at `mail.green.mpc` (→ `relay.provider-c.test` priority 10,
 4. Automatic rejoining watches only the **default** account's Inbox. For the other account, click
    **Rejoin MPC Chunks** in its Inbox.
 
+## Add more mail users
+
+Besides alice and bob, you can add accounts on either mail server from your own computer.
+[`utils\mpc-lab-mail-users\New-LabMailUser.ps1`](../../utils/mpc-lab-mail-users) runs
+`add-mail-user.sh` from the same folder on the server through Systems Manager (no SSH), then prints
+the Outlook settings:
+
+```powershell
+cd utils\mpc-lab-mail-users
+.\New-LabMailUser.ps1 -Domain blue.mpc  -UserName carol -Region ap-southeast-2
+.\New-LabMailUser.ps1 -Domain green.mpc -UserName dave  -Password 'Lab-Pass-2026' -Region ap-southeast-2
+.\New-LabMailUser.ps1 -Domain blue.mpc  -UserName carol -ResetPassword -Region ap-southeast-2
+```
+
+- `-Region` is the `region` from your `terraform.tfvars`. Without `-Password`, a password is
+  generated. `-NamePrefix` and `-AwsProfile` cover a non-default `name_prefix` or AWS CLI profile.
+- If PowerShell refuses to run the script, run it with
+  `powershell -ExecutionPolicy Bypass -File .\New-LabMailUser.ps1 ...` instead.
+- Accounts are Linux users with no login shell, like alice and bob. Mail to `carol@blue.mpc` is
+  delivered to `~carol/Maildir` straight away, including MPC chunks from the other domain.
+- The password travels in the Run Command, so it shows in that command's history in the Systems
+  Manager console. Don't use a real password.
+- Accounts live on the instances, so `tofu destroy` (or any change that replaces the mail servers)
+  removes them. Run the script again afterwards.
+- Without the AWS CLI, connect to the server (EC2 console → instance → **Connect → Session
+  Manager**), copy `add-mail-user.sh` there, and run `sudo sh add-mail-user.sh carol`.
+
 ## Verify the path a chunk took
 
 Open a chunk in Outlook, go to **File → Properties**, and read the `Received:` lines in the

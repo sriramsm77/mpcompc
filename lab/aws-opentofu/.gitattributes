@@ -1,0 +1,4 @@
+# The cloud-init template runs on Linux: keep LF line endings even when Git on Windows checks
+# the repository out with CRLF.
+*.sh    text eol=lf
+*.tftpl text eol=lf
