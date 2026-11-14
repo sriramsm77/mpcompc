@@ -1,0 +1,186 @@
+#!/bin/bash
+# MPCoMPC lab: first-boot setup, rendered by OpenTofu for role "${role}" (${fqdn}).
+# Output: /var/log/cloud-init-output.log. Safe to run again.
+#
+#   mailhost  Postfix for its mail domain + SMTP submission and Dovecot IMAP for the mail user.
+#             Mail its user submits (port 587) goes through the X-MPC-Via rule; mail arriving
+#             from the relays (port 25) does not, so chunks are delivered instead of looping.
+#             Also runs dnsmasq: the DNS server for its own domain (A, MX, MPC SRV).
+#   relay     Plain Postfix relay for the lab network. Mail for a domain it is an entry relay
+#             of goes to its linked partner relay (transport table); everything else goes to
+#             the destination's MX. Never applies the X-MPC-Via rule.
+set -euo pipefail
+
+ROLE='${role}'
+FQDN='${fqdn}'
+DOMAIN='${domain}'
+MAIL_USER='${mail_user}'
+MAIL_PASSWORD='${mail_password}'
+RUN_LAB_DNS='${run_lab_dns}'
+VPC_CIDR='${vpc_cidr}'
+VPC_RESOLVER='${vpc_resolver}'
+LAB_DNS_SERVERS='${lab_dns_servers}'
+LAB_DNS_LISTEN='${lab_dns_listen}'
+LAB_DNS_DOMAINS='${lab_dns_domains}'
+
+export DEBIAN_FRONTEND=noninteractive
+log() { echo "[mpc-lab] $*"; }
+
+log "Setting up $ROLE ($FQDN)"
+
+# --- Host name --------------------------------------------------------------------------------
+hostnamectl set-hostname "$FQDN"
+mkdir -p /etc/cloud/cloud.cfg.d
+echo "preserve_hostname: true" > /etc/cloud/cloud.cfg.d/99-mpc-lab.cfg
+
+# --- Packages (services are kept stopped until they are configured) ---------------------------
+printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+chmod +x /usr/sbin/policy-rc.d
+
+echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
+echo "postfix postfix/mailname string $FQDN" | debconf-set-selections
+
+PACKAGES="postfix ssl-cert"
+if [ "$ROLE" = "mailhost" ]; then
+  PACKAGES="$PACKAGES dovecot-core dovecot-imapd swaks libnet-ssleay-perl bind9-dnsutils"
+fi
+if [ "$RUN_LAB_DNS" = "yes" ]; then
+  PACKAGES="$PACKAGES dnsmasq"
+fi
+
+APT="apt-get -o DPkg::Lock::Timeout=600 -y -q"
+$APT update
+# shellcheck disable=SC2086
+$APT install --no-install-recommends $PACKAGES
+
+rm -f /usr/sbin/policy-rc.d
+
+# --- DNS server for this mail domain ------------------------------------------------------------
+# Answers for its own domain (A, MX and that domain's _mpcN._tcp SRV records) and the relay names,
+# and forwards the other mail domains to their own DNS servers. Anything else goes to the VPC
+# resolver. The Outlook add-in on your laptop queries these servers for the SRV records.
+if [ "$RUN_LAB_DNS" = "yes" ]; then
+  cat > /etc/dnsmasq.d/mpc-lab.conf <<EOF
+# MPCoMPC lab DNS for $DOMAIN
+bind-interfaces
+listen-address=$LAB_DNS_LISTEN
+listen-address=127.0.0.1
+no-hosts
+no-resolv
+server=$VPC_RESOLVER
+domain-needed
+
+${lab_dns_records}
+EOF
+fi
+
+# --- Use the lab DNS servers for the lab domains; other names keep using the VPC resolver ----
+mkdir -p /etc/systemd/resolved.conf.d
+cat > /etc/systemd/resolved.conf.d/mpc-lab.conf <<EOF
+[Resolve]
+DNS=$LAB_DNS_SERVERS
+Domains=$LAB_DNS_DOMAINS
+EOF
+
+# --- Postfix ----------------------------------------------------------------------------------
+postconf -e \
+  "myhostname=$FQDN" \
+  "mydomain=$DOMAIN" \
+  "inet_interfaces=all" \
+  "inet_protocols=ipv4" \
+  "mynetworks=127.0.0.0/8 $VPC_CIDR" \
+  "smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem" \
+  "smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key" \
+  "smtpd_tls_security_level=may" \
+  "smtp_tls_security_level=may" \
+  "smtpd_relay_restrictions=permit_mynetworks permit_sasl_authenticated defer_unauth_destination"
+# Never apply the X-MPC-Via rule to mail in general (only submission uses it, below).
+postconf -X header_checks || true
+
+if [ "$ROLE" = "relay" ]; then
+  postconf -e "myorigin=\$myhostname" "mydestination=localhost" "relayhost="
+
+  # Per-domain routing: for a domain this relay is an entry point of, hand the mail to its
+  # linked partner relay (brackets: the partner's A record, no MX lookup). Any other domain
+  # is delivered to its MX. texthash: tables need no postmap step.
+  cat > /etc/postfix/transport <<'EOF'
+${relay_transport}
+EOF
+  postconf -e "transport_maps=texthash:/etc/postfix/transport"
+else
+  postconf -e \
+    "myorigin=\$mydomain" \
+    "mydestination=\$mydomain, \$myhostname, localhost" \
+    "home_mailbox=Maildir/"
+
+  # The rule from postfix-3.6.4/etc/postfix/header_checks in sriramsm77/mpcompc: route each
+  # chunk through the relay named in its X-MPC-Via header.
+  cat > /etc/postfix/header_checks <<'EOF'
+/^X-MPC-Via:(\s*)(\S+)(\s*)$/ FILTER smtp:$2
+EOF
+
+  # A separate cleanup service that applies the rule. Only the submission service (port 587,
+  # used by Outlook) uses it, so chunks arriving from the relays on port 25 are delivered here
+  # instead of being sent back out to the relay named in their header.
+  postconf -M "mpccleanup/unix=mpccleanup unix n - y - 0 cleanup"
+  postconf -P "mpccleanup/unix/header_checks=regexp:/etc/postfix/header_checks"
+
+  # Authenticated submission on port 587 for Outlook (passwords checked by Dovecot).
+  postconf -M "submission/inet=submission inet n - y - - smtpd"
+  postconf -P \
+    "submission/inet/syslog_name=postfix/submission" \
+    "submission/inet/smtpd_tls_security_level=encrypt" \
+    "submission/inet/smtpd_tls_auth_only=yes" \
+    "submission/inet/smtpd_sasl_auth_enable=yes" \
+    "submission/inet/smtpd_sasl_type=dovecot" \
+    "submission/inet/smtpd_sasl_path=private/auth" \
+    "submission/inet/smtpd_client_restrictions=permit_sasl_authenticated,reject" \
+    "submission/inet/smtpd_relay_restrictions=permit_sasl_authenticated,reject" \
+    "submission/inet/cleanup_service_name=mpccleanup"
+fi
+
+# --- Dovecot (IMAP for Outlook, and password checks for SMTP submission) ----------------------
+if [ "$ROLE" = "mailhost" ]; then
+  cat > /etc/dovecot/conf.d/99-mpc-lab.conf <<'EOF'
+listen = *
+mail_location = maildir:~/Maildir
+ssl = required
+ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
+disable_plaintext_auth = yes
+auth_mechanisms = plain login
+
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    user = postfix
+    group = postfix
+  }
+}
+EOF
+
+  # The mail account Outlook logs in with. SSH password logins stay disabled.
+  id "$MAIL_USER" >/dev/null 2>&1 || useradd --create-home --shell /usr/sbin/nologin "$MAIL_USER"
+  echo "$MAIL_USER:$MAIL_PASSWORD" | chpasswd
+fi
+
+# --- Check the configuration and start everything ---------------------------------------------
+postfix check
+[ "$ROLE" != "mailhost" ] || doveconf -n > /dev/null
+[ "$RUN_LAB_DNS" != "yes" ] || dnsmasq --test
+
+systemctl restart systemd-resolved
+if [ "$RUN_LAB_DNS" = "yes" ]; then
+  systemctl enable dnsmasq
+  systemctl restart dnsmasq
+fi
+if [ "$ROLE" = "mailhost" ]; then
+  systemctl enable dovecot
+  systemctl restart dovecot
+fi
+systemctl enable postfix
+systemctl restart postfix
+
+mkdir -p /var/lib/mpc-lab
+date -u > /var/lib/mpc-lab/ready
+log "Done: $ROLE ($FQDN) is ready"

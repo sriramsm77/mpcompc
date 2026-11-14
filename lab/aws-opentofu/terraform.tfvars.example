@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (OpenTofu reads that name too) and fill in.
+
+# Your laptop's public IP address, as a /32: curl https://checkip.amazonaws.com
+admin_cidr = "203.0.113.25/32"
+
+# region        = "ap-southeast-2"   # must be a region where your AWS account allows EC2
+# instance_type = "t3.micro"     # free-plan eligible; t4g.micro (ARM) also works
+# vpc_cidr      = "10.20.0.0/16"
+
+# Optional: allow SSH with this key (otherwise use Session Manager: tofu output shell_access)
+# ssh_public_key = "ssh-ed25519 AAAA... you@laptop"
