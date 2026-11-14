@@ -29,8 +29,8 @@ ships as a single assembly.
 
 ## Requirements
 
-- Windows with classic Outlook (Microsoft 365 desktop, 2016, 2019, 2021 or 2024). The new Outlook for
-  Windows doesn't run VSTO add-ins.
+- Windows with classic Outlook (2013, 2016, 2019, 2021, 2024 or Microsoft 365 desktop). The new
+  Outlook for Windows doesn't run VSTO add-ins.
 - Visual Studio 2022 with the **Office/SharePoint development** workload and the .NET Framework 4.8
   targeting pack.
 - The Visual Studio 2010 Tools for Office Runtime, which Office installs and the ClickOnce installer
@@ -48,10 +48,67 @@ certificate with no password, like the one Visual Studio creates for a new VSTO 
 giving the add-in to other people, replace it with your own code-signing certificate
 (**Project → Properties → Signing**).
 
-## Install for other users
+## Install on other machines
 
-Use **Build → Publish MpcOutlookAddIn** and run the `setup.exe` it produces on each machine. To
-remove the add-in, use **Apps & features** (it appears as "MPC Outlook Add-in").
+[`utils/outlook-mpc-addin-installer/`](../utils/outlook-mpc-addin-installer) builds a single setup
+program, `MpcOutlookAddIn-Setup-<version>.exe`, that you can copy
+to any Windows PC with classic Outlook. It uses [Inno Setup](https://jrsoftware.org/isinfo.php).
+
+### Build the installer
+
+On the machine where you build the add-in:
+
+1. Install Inno Setup 6 once: `winget install JRSoftware.InnoSetup`.
+2. In PowerShell, from `utils\outlook-mpc-addin-installer`, run:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
+   ```
+
+   It builds the add-in in Release with Visual Studio's MSBuild, then writes
+   `utils\outlook-mpc-addin-installer\Output\MpcOutlookAddIn-Setup-<version>.exe`. The version comes from
+   `AssemblyFileVersion` in `Properties\AssemblyInfo.cs`; raise it for each release so upgrades
+   are easy to tell apart. `-SkipBuild` packages the existing `bin\Release` output, and
+   `-Iscc <path>` points at `ISCC.exe` if Inno Setup is somewhere unusual.
+
+### What the setup does
+
+- Asks whether to install **just for me** (the default; no admin rights) or **for all users**
+  (admin). From the command line, `/CURRENTUSER` or `/ALLUSERS` choose, and `/VERYSILENT` installs
+  without any windows.
+- Checks for the .NET Framework 4.8, and for the Visual Studio 2010 Tools for Office Runtime. If the
+  runtime is missing, it offers to open its
+  [download page](https://www.microsoft.com/download/details.aspx?id=105522).
+- Copies the add-in, its two signed manifests and the VSTO utility DLLs to
+  `%LOCALAPPDATA%\Programs\MpcOutlookAddIn` (just me) or `Program Files\MpcOutlookAddIn` (all users).
+- Registers the add-in under `Software\Microsoft\Office\Outlook\Addins\MpcOutlookAddIn` with
+  `LoadBehavior=3`, in HKCU (just me) or in both the 32-bit and 64-bit HKLM views (all users), so it
+  works with either bitness of Office.
+- Adds the add-in to Outlook 2013/2016+'s `DoNotDisableAddinList`, so Outlook doesn't turn it off
+  for starting slowly.
+- Trust: the manifests are signed with the test certificate, which Windows doesn't know. For a
+  just-me install, `vsto-trust.ps1` adds an entry to the user's VSTO inclusion list so Outlook
+  doesn't ask whether to install the add-in. Add-ins installed to Program Files are trusted
+  already. If Outlook still asks once, answer **Install**. The entry is written to
+  `%LOCALAPPDATA%\MpcOutlookAddIn\install.log`.
+- If Outlook has the add-in open during an upgrade, setup offers to close Outlook. Start Outlook
+  again after installing to load the add-in.
+
+The uninstaller (**Settings → Apps → MPC Outlook Add-in**) removes the files, the registration and
+the inclusion list entry. It leaves `settings.ini` and `mpc.log` in place.
+
+Notes:
+
+- The setup .exe itself isn't code-signed, so Windows SmartScreen may say "Windows protected your
+  PC". Choose **More info → Run anyway**.
+- On the machine where you debug with Visual Studio, F5 registers the add-in from `bin\Debug` under
+  the same HKCU key, and a VS **Clean** removes that key. A just-me install and VS debugging
+  overwrite each other's registration. Rerun whichever one you want Outlook to use.
+- Outlook 2013 works with the installer as-is. For F5 debugging against Outlook 2013, change
+  `DebugInfoExeName` in the .csproj from `Office\16.0` to `Office\15.0`.
+
+**Build → Publish MpcOutlookAddIn** in Visual Studio still works too. It produces a ClickOnce
+`setup.exe` plus a folder of files, not a single installer.
 
 ## Using it
 
