@@ -42,15 +42,18 @@ output "outlook_recipient_account" {
 }
 
 output "addin_settings_ini" {
-  description = "Put this line in %APPDATA%\\MpcOutlookAddIn\\settings.ini on the sending laptop, then restart Outlook."
-  value       = "DnsServers=${local.sender_public_ip}"
+  description = "Put this line in %APPDATA%\\MpcOutlookAddIn\\settings.ini on the laptop, then restart Outlook. Either server answers for both domains; the add-in tries them in order."
+  value       = "DnsServers=${join(", ", [for k in local.lab_dns_hosts : aws_eip.lab[k].public_ip])}"
 }
 
 output "check_srv_records" {
-  description = "Run on your laptop to confirm it can see the MPC SRV records for both mail domains."
-  value = join("; ", [
-    for d in sort(keys(local.mail_domains)) : "nslookup -type=SRV _mpc1._tcp.${d} ${local.sender_public_ip}"
-  ])
+  description = "Run on your laptop: asks each mail domain's own DNS server for both of its MPC SRV records."
+  value = join("; ", flatten([
+    for k in local.lab_dns_hosts : [
+      for i, r in lookup(local.mpc_srv, local.hosts[k].domain, []) :
+      "nslookup -type=SRV _mpc${i + 1}._tcp.${local.hosts[k].domain} ${aws_eip.lab[k].public_ip}"
+    ]
+  ]))
 }
 
 output "mpc_routes" {

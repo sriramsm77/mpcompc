@@ -8,7 +8,7 @@ relay-b with relay-d.
 ```
                          chunk 1:  relay-a ◄────► relay-c
 alice@green.mpc                   (provider A)   (provider C)                      bob@blue.mpc
-  mail.green.mpc  ◄──────►                                         ◄──────►  mx.blue.mpc
+  mail.green.mpc  ◄──────►                                         ◄──────►  mail.blue.mpc
   (mta-sender)               chunk 2:  relay-b ◄────► relay-d                  (mx-recipient)
                                   (provider B)   (provider D)
 ```
@@ -25,13 +25,13 @@ at the destination's n-th relay, which hands it to its linked partner, which del
 
 | Direction | Chunk 1 | Chunk 2 |
 |---|---|---|
-| alice → bob (`blue.mpc`) | relay-a → relay-c → `mx.blue.mpc` | relay-b → relay-d → `mx.blue.mpc` |
+| alice → bob (`blue.mpc`) | relay-a → relay-c → `mail.blue.mpc` | relay-b → relay-d → `mail.blue.mpc` |
 | bob → alice (`green.mpc`) | relay-c → relay-a → `mail.green.mpc` | relay-d → relay-b → `mail.green.mpc` |
 
 | Server | Name | Address | Role |
 |---|---|---|---|
-| `mta-sender` | `mail.green.mpc` | 10.20.1.10 | green.mpc mail server (alice) + lab DNS |
-| `mx-recipient` | `mx.blue.mpc` | 10.20.4.10 | blue.mpc mail server (bob) |
+| `mta-sender` | `mail.green.mpc` | 10.20.1.10 | green.mpc mail server (alice) + DNS for green.mpc |
+| `mx-recipient` | `mail.blue.mpc` | 10.20.4.10 | blue.mpc mail server (bob) + DNS for blue.mpc |
 | `relay-a` | `relay.provider-a.test` | 10.20.2.10 | entry relay for blue.mpc; linked to relay-c |
 | `relay-b` | `relay.provider-b.test` | 10.20.3.10 | entry relay for blue.mpc; linked to relay-d |
 | `relay-c` | `relay.provider-c.test` | 10.20.5.10 | entry relay for green.mpc; linked to relay-a |
@@ -39,9 +39,13 @@ at the destination's n-th relay, which hands it to its linked partner, which del
 
 How the pieces fit:
 
-- **Lab DNS** (dnsmasq on `mta-sender`): A, MX and the SRV records above. To change which relays
-  a domain uses, edit `mpc_srv` in `main.tf`; to change which relays are linked, edit
-  `relay_links`.
+- **DNS** (dnsmasq on **both** mail servers): each mail server is the DNS server for its own
+  domain. `mail.green.mpc` holds green.mpc's A, MX and SRV records; `mail.blue.mpc` holds
+  blue.mpc's. Each also carries the relay names (`relay.provider-*.test`) and forwards questions
+  about the other mail domain to that domain's DNS server, as a resolver follows a delegation. So
+  either server can answer for both domains, but each domain's records live only on its own
+  server. All six servers list both DNS servers. To change which relays a domain uses, edit
+  `mpc_srv` in `main.tf`; to change which relays are linked, edit `relay_links`.
 - **Mail servers** (Postfix + Dovecot): both apply your X-MPC-Via rule from
   `postfix-3.6.4/etc/postfix/header_checks` to mail their user **submits** from Outlook (port 587).
   This uses a separate Postfix cleanup service, `mpccleanup`, which only the submission service
@@ -55,8 +59,8 @@ Your laptop can reach only ports 587, 993 and 53 on the two mail servers, and on
 `admin_cidr`. Mail between the servers stays on private addresses inside the VPC.
 
 **About the domain names:** `.mpc` isn't a real top-level domain, so `green.mpc` and `blue.mpc`
-exist only in the lab DNS. dnsmasq answers for them itself and never forwards those names, and
-the servers send every lookup for them to the lab DNS. To use other names, change the two
+exist only in the lab's two DNS servers. Neither ever forwards a lab name to the internet, and the
+servers send every lookup for lab names to the lab DNS servers. To use other names, change the two
 `domain` / `fqdn` pairs in `main.tf`; the DNS records and outputs follow automatically.
 
 ## Before you start
@@ -82,18 +86,23 @@ passwords stay the same.
 
 ## Check it works
 
-From your laptop, both domains' SRV records should resolve:
+From your laptop, each domain's own DNS server should return both of its SRV records:
 
 ```powershell
 tofu output -raw check_srv_records | Invoke-Expression
 ```
 
+green.mpc is asked at `mail.green.mpc` (→ `relay.provider-c.test` priority 10,
+`relay.provider-d.test` priority 11), and blue.mpc at `mail.blue.mpc` (→ `relay.provider-a.test`
+10, `relay.provider-b.test` 11).
+
 `tofu output mpc_routes` shows the path each chunk takes.
 
 ## Set up Outlook (2013)
 
-1. Add the line from `tofu output -raw addin_settings_ini` to
-   `%APPDATA%\MpcOutlookAddIn\settings.ini`, then restart Outlook.
+1. Add the line from `tofu output -raw addin_settings_ini` (`DnsServers=<green IP>, <blue IP>`) to
+   `%APPDATA%\MpcOutlookAddIn\settings.ini`, then restart Outlook. The add-in asks the first
+   server, and the second only if the first doesn't answer; either one answers for both domains.
 2. Add both accounts with **File → Add Account → Manual setup or additional server types → POP or
    IMAP**. `tofu output outlook_sender_account` / `outlook_recipient_account` give the details
    (`alice@green.mpc`, `bob@blue.mpc`), and `tofu output -raw alice_password` / `bob_password`
@@ -113,7 +122,7 @@ Open a chunk in Outlook, go to **File → Properties**, and read the `Received:`
 **Internet headers** from the bottom up. For chunk 1 from alice to bob there are four hops:
 
 ```
-by mx.blue.mpc             from relay.provider-c.test [10.20.5.10]
+by mail.blue.mpc             from relay.provider-c.test [10.20.5.10]
 by relay.provider-c.test from relay.provider-a.test [10.20.2.10]
 by relay.provider-a.test from mail.green.mpc [10.20.1.10]
 by mail.green.mpc          from your laptop (ESMTPSA = alice logged in)
@@ -127,7 +136,7 @@ four routes. On any server (EC2 console → instance → **Connect → Session M
 |---|---|---|
 | `mta-sender` / `mx-recipient` (sending side) | `relay=relay.provider-a.test[10.20.2.10]` and `relay=relay.provider-b.test[10.20.3.10]` | `relay=relay.provider-c.test[10.20.5.10]` and `relay=relay.provider-d.test[10.20.6.10]` |
 | entry relay | relay-a → `relay=relay.provider-c.test`, relay-b → `relay=relay.provider-d.test` | relay-c → `relay=relay.provider-a.test`, relay-d → `relay=relay.provider-b.test` |
-| partner relay | relay-c / relay-d → `relay=mx.blue.mpc[10.20.4.10]` | relay-a / relay-b → `relay=mail.green.mpc[10.20.1.10]` |
+| partner relay | relay-c / relay-d → `relay=mail.blue.mpc[10.20.4.10]` | relay-a / relay-b → `relay=mail.green.mpc[10.20.1.10]` |
 | receiving mail server | `to=<bob@blue.mpc>, relay=local … delivered to maildir` | `to=<alice@green.mpc>, relay=local …` |
 
 ## Troubleshooting

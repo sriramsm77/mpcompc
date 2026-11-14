@@ -5,7 +5,7 @@
 #   mailhost  Postfix for its mail domain + SMTP submission and Dovecot IMAP for the mail user.
 #             Mail its user submits (port 587) goes through the X-MPC-Via rule; mail arriving
 #             from the relays (port 25) does not, so chunks are delivered instead of looping.
-#             One mail host also runs the lab DNS server (dnsmasq).
+#             Also runs dnsmasq: the DNS server for its own domain (A, MX, MPC SRV).
 #   relay     Plain Postfix relay for the lab network. Mail for a domain it is an entry relay
 #             of goes to its linked partner relay (transport table); everything else goes to
 #             the destination's MX. Never applies the X-MPC-Via rule.
@@ -19,7 +19,7 @@ MAIL_PASSWORD='${mail_password}'
 RUN_LAB_DNS='${run_lab_dns}'
 VPC_CIDR='${vpc_cidr}'
 VPC_RESOLVER='${vpc_resolver}'
-LAB_DNS_IP='${lab_dns_ip}'
+LAB_DNS_SERVERS='${lab_dns_servers}'
 LAB_DNS_LISTEN='${lab_dns_listen}'
 LAB_DNS_DOMAINS='${lab_dns_domains}'
 
@@ -55,13 +55,13 @@ $APT install --no-install-recommends $PACKAGES
 
 rm -f /usr/sbin/policy-rc.d
 
-# --- Lab DNS server ---------------------------------------------------------------------------
-# Answers for the lab domains (the mail domains and the relay provider domains) and never
-# forwards those names; everything else goes to the VPC resolver. The Outlook add-in on your laptop
-# queries this server for the _mpcN._tcp SRV records.
+# --- DNS server for this mail domain ------------------------------------------------------------
+# Answers for its own domain (A, MX and that domain's _mpcN._tcp SRV records) and the relay names,
+# and forwards the other mail domains to their own DNS servers. Anything else goes to the VPC
+# resolver. The Outlook add-in on your laptop queries these servers for the SRV records.
 if [ "$RUN_LAB_DNS" = "yes" ]; then
   cat > /etc/dnsmasq.d/mpc-lab.conf <<EOF
-# MPCoMPC lab zone
+# MPCoMPC lab DNS for $DOMAIN
 bind-interfaces
 listen-address=$LAB_DNS_LISTEN
 listen-address=127.0.0.1
@@ -74,11 +74,11 @@ ${lab_dns_records}
 EOF
 fi
 
-# --- Use the lab DNS server for the lab domains; other names keep using the VPC resolver -----
+# --- Use the lab DNS servers for the lab domains; other names keep using the VPC resolver ----
 mkdir -p /etc/systemd/resolved.conf.d
 cat > /etc/systemd/resolved.conf.d/mpc-lab.conf <<EOF
 [Resolve]
-DNS=$LAB_DNS_IP
+DNS=$LAB_DNS_SERVERS
 Domains=$LAB_DNS_DOMAINS
 EOF
 

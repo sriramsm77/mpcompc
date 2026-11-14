@@ -1,7 +1,7 @@
 # MPCoMPC test lab: one VPC, six Ubuntu 24.04 servers.
 #
-#   mta-sender    mail.green.mpc           green.mpc mail server (alice) + lab DNS (dnsmasq)
-#   mx-recipient  mx.blue.mpc              blue.mpc mail server (bob)
+#   mta-sender    mail.green.mpc           green.mpc mail server (alice) + DNS for green.mpc
+#   mx-recipient  mail.blue.mpc            blue.mpc mail server (bob) + DNS for blue.mpc
 #   relay-a .. d  relay.provider-a.test .. relay.provider-d.test; a <-> c and b <-> d are linked
 #
 # Each mail domain publishes its own two entry relays as _mpc1/_mpc2._tcp SRV records:
@@ -11,7 +11,7 @@
 #
 # An entry relay hands mail for its domain to its linked partner, which delivers it:
 #
-#   alice -> bob    chunk 1: relay-a -> relay-c -> mx.blue.mpc     chunk 2: relay-b -> relay-d
+#   alice -> bob    chunk 1: relay-a -> relay-c -> mail.blue.mpc   chunk 2: relay-b -> relay-d
 #   bob -> alice    chunk 1: relay-c -> relay-a -> mail.green.mpc  chunk 2: relay-d -> relay-b
 #
 # Both mail servers apply the X-MPC-Via rule to mail their users submit (port 587).
@@ -51,10 +51,10 @@ locals {
     "mx-recipient" = {
       subnet     = 4
       role       = "mailhost"
-      fqdn       = "mx.blue.mpc"
+      fqdn       = "mail.blue.mpc"
       domain     = "blue.mpc"
       mail_user  = "bob"
-      lab_dns    = false
+      lab_dns    = true
       elastic_ip = true
     }
     "relay-c" = {
@@ -104,29 +104,43 @@ locals {
   subnet_cidr  = { for k, h in local.hosts : k => cidrsubnet(var.vpc_cidr, 8, h.subnet) }
   private_ip   = { for k, h in local.hosts : k => cidrhost(local.subnet_cidr[k], 10) }
   vpc_resolver = cidrhost(var.vpc_cidr, 2) # AmazonProvidedDNS
-  lab_dns_ip   = local.private_ip["mta-sender"]
 
   # Mail domain => its mail server's name (also its MX).
   mail_domains = { for k, h in local.hosts : h.domain => h.fqdn if h.role == "mailhost" }
 
   # Every domain used in the lab (mail domains and relay provider domains).
-  lab_domains = sort(distinct([for h in values(local.hosts) : h.domain]))
+  lab_domains     = sort(distinct([for h in values(local.hosts) : h.domain]))
+  relay_domains   = sort(distinct([for h in values(local.hosts) : h.domain if h.role == "relay"]))
+  lab_dns_domains = join(" ", [for d in local.lab_domains : "~${d}"]) # systemd-resolved routing domains
 
-  # dnsmasq lines for the lab zone: A, MX and the MPC SRV records. "local=" makes dnsmasq answer
-  # for a domain itself and never forward it.
-  lab_dns_records = join("\n", concat(
-    [for d in local.lab_domains : "local=/${d}/"],
-    [for k in sort(keys(local.hosts)) : "host-record=${local.hosts[k].fqdn},${local.private_ip[k]}"],
-    [for d in sort(keys(local.mail_domains)) : "mx-host=${d},${local.mail_domains[d]},10"],
-    flatten([
-      for d in sort(keys(local.mpc_srv)) : [
-        for i, r in local.mpc_srv[d] : "srv-host=_mpc${i + 1}._tcp.${d},${local.hosts[r].fqdn},25,${10 + i},0"
-      ]
-    ]),
-  ))
+  # The DNS servers: every mail server runs dnsmasq for its own domain.
+  lab_dns_hosts   = sort([for k, h in local.hosts : k if h.lab_dns])
+  lab_dns_servers = join(" ", [for k in local.lab_dns_hosts : local.private_ip[k]])
 
-  # systemd-resolved routing domains: these names are always looked up on the lab DNS server.
-  lab_dns_domains = join(" ", [for d in local.lab_domains : "~${d}"])
+  # dnsmasq configuration for each DNS server. It answers for its own mail domain (A, MX and
+  # that domain's MPC SRV records) and for the relay names, and forwards the other mail domains
+  # to their own DNS servers, as a resolver follows a delegation. "local=" makes dnsmasq answer
+  # a domain itself and never forward it.
+  lab_dns_records = {
+    for k in local.lab_dns_hosts : k => join("\n", concat(
+      ["# ${local.hosts[k].domain}: answered here"],
+      ["local=/${local.hosts[k].domain}/"],
+      [for h in sort(keys(local.hosts)) : "host-record=${local.hosts[h].fqdn},${local.private_ip[h]}" if local.hosts[h].domain == local.hosts[k].domain],
+      ["mx-host=${local.hosts[k].domain},${local.hosts[k].fqdn},10"],
+      [
+        for i, r in lookup(local.mpc_srv, local.hosts[k].domain, []) :
+        "srv-host=_mpc${i + 1}._tcp.${local.hosts[k].domain},${local.hosts[r].fqdn},25,${10 + i},0"
+      ],
+      ["", "# Relay names (every DNS server carries these)"],
+      [for d in local.relay_domains : "local=/${d}/"],
+      [for h in sort(keys(local.hosts)) : "host-record=${local.hosts[h].fqdn},${local.private_ip[h]}" if local.hosts[h].role == "relay"],
+      ["", "# Other mail domains: asked of their own DNS servers"],
+      [
+        for o in local.lab_dns_hosts : "server=/${local.hosts[o].domain}/${local.private_ip[o]}"
+        if local.hosts[o].domain != local.hosts[k].domain
+      ],
+    ))
+  }
 
   az   = sort(data.aws_ec2_instance_type_offerings.this.locations)[0]
   arch = contains(data.aws_ec2_instance_type.this.supported_architectures, "arm64") ? "arm64" : "amd64"
@@ -387,9 +401,9 @@ resource "aws_instance" "lab" {
     relay_transport = lookup(local.relay_transport, each.key, "")
     vpc_cidr        = var.vpc_cidr
     vpc_resolver    = local.vpc_resolver
-    lab_dns_ip      = local.lab_dns_ip
+    lab_dns_servers = local.lab_dns_servers
     lab_dns_listen  = local.private_ip[each.key]
-    lab_dns_records = local.lab_dns_records
+    lab_dns_records = lookup(local.lab_dns_records, each.key, "")
     lab_dns_domains = local.lab_dns_domains
   })
   user_data_replace_on_change = true
