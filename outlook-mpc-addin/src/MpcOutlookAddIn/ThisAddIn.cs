@@ -12,7 +12,21 @@ namespace MpcOutlookAddIn
     {
         private System.Windows.Forms.Timer _rejoinTimer;
 
-        internal MpcSettings Settings { get; private set; }
+        private MpcSettings _settings;
+
+        /// <summary>
+        /// Loaded on first use, because Outlook builds the main window's ribbon (and calls
+        /// MpcRibbon.GetPressed, which reads these settings) before the Startup event runs.
+        /// </summary>
+        internal MpcSettings Settings
+        {
+            get
+            {
+                if (_settings == null) _settings = LoadSettings();
+                return _settings;
+            }
+        }
+
         internal OutlookMpcSender Sender { get; private set; }
         internal OutlookMpcReceiver Receiver { get; private set; }
 
@@ -28,18 +42,21 @@ namespace MpcOutlookAddIn
             }
         }
 
-        private void ThisAddIn_Startup(object sender, EventArgs e)
+        private static MpcSettings LoadSettings()
         {
             try
             {
-                Settings = MpcSettings.Load(SettingsPath);
+                return MpcSettings.Load(SettingsPath);
             }
             catch (Exception ex)
             {
                 AddInLog.Write("Could not read " + SettingsPath + "; using defaults", ex);
-                Settings = new MpcSettings();
+                return new MpcSettings();
             }
+        }
 
+        private void ThisAddIn_Startup(object sender, EventArgs e)
+        {
             Sender = new OutlookMpcSender(Application, () => Settings, CreateResolver);
             Receiver = new OutlookMpcReceiver(() => Settings);
 

@@ -43,6 +43,7 @@ namespace MpcOutlookAddIn
                 return;
             }
 
+            if (!IsStarted()) return;
             Globals.ThisAddIn.Sender.SendFromRibbon(mail);
         }
 
@@ -50,7 +51,7 @@ namespace MpcOutlookAddIn
         {
             var explorer = control.Context as Outlook.Explorer;
             Outlook.MAPIFolder folder = explorer == null ? null : explorer.CurrentFolder;
-            if (folder == null) return;
+            if (folder == null || !IsStarted()) return;
 
             Cursor previous = Cursor.Current;
             Cursor.Current = Cursors.WaitCursor;
@@ -109,6 +110,20 @@ namespace MpcOutlookAddIn
             {
                 MessageBox.Show("Could not open " + ThisAddIn.SettingsPath + ":\n\n" + ex.Message, Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// Ribbon callbacks can run before ThisAddIn's Startup event has created the sender and
+        /// receiver; ask the user to try again in that case.
+        /// </summary>
+        private static bool IsStarted()
+        {
+            ThisAddIn addIn = Globals.ThisAddIn;
+            if (addIn != null && addIn.Sender != null && addIn.Receiver != null) return true;
+
+            MessageBox.Show("The MPC add-in is still starting. Try again in a moment.", Caption,
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return false;
         }
 
         private static string GetResourceText(string fileName)
