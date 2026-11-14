@@ -1,21 +1,28 @@
-# MPCoMPC test lab: one VPC, four Ubuntu 24.04 servers.
+# MPCoMPC test lab: one VPC, six Ubuntu 24.04 servers.
 #
-#   mta-sender   mail.sender.test         lab DNS (dnsmasq) + Postfix with the X-MPC-Via
-#                                         header_checks rule + Dovecot IMAP for alice
-#   relay-a      relay-a.provider-a.test  Postfix relay ("service provider A")
-#   relay-b      relay-b.provider-b.test  Postfix relay ("service provider B")
-#   mx-recipient mx.recipient.test        Postfix MX + Dovecot IMAP for bob
+#   mta-sender    mail.green.mpc           green.mpc mail server (alice) + lab DNS (dnsmasq)
+#   mx-recipient  mx.blue.mpc              blue.mpc mail server (bob)
+#   relay-a       relay-a.provider-a.test  relay, forwards everything to relay-c
+#   relay-b       relay-b.provider-b.test  relay, forwards everything to relay-d
+#   relay-c       relay-c.provider-c.test  relay, delivers to the destination's MX
+#   relay-d       relay-d.provider-d.test  relay, delivers to the destination's MX
 #
+# MPC works in both directions. Both mail servers apply the X-MPC-Via rule to mail their users
+# submit (port 587), so chunk 1 travels relay-a -> relay-c and chunk 2 relay-b -> relay-d.
 # Mail between the servers stays on private addresses inside the VPC.
+#
+# green.mpc and blue.mpc exist only in the lab DNS; the servers never ask the internet about them.
 
 locals {
   hosts = {
     "mta-sender" = {
       subnet     = 1
-      role       = "sender"
-      fqdn       = "mail.sender.test"
-      domain     = "sender.test"
+      role       = "mailhost"
+      fqdn       = "mail.green.mpc"
+      domain     = "green.mpc"
       mail_user  = "alice"
+      lab_dns    = true
+      next_hop   = ""
       elastic_ip = true
     }
     "relay-a" = {
@@ -24,6 +31,8 @@ locals {
       fqdn       = "relay-a.provider-a.test"
       domain     = "provider-a.test"
       mail_user  = ""
+      lab_dns    = false
+      next_hop   = "relay-c.provider-c.test"
       elastic_ip = false
     }
     "relay-b" = {
@@ -32,22 +41,68 @@ locals {
       fqdn       = "relay-b.provider-b.test"
       domain     = "provider-b.test"
       mail_user  = ""
+      lab_dns    = false
+      next_hop   = "relay-d.provider-d.test"
       elastic_ip = false
     }
     "mx-recipient" = {
       subnet     = 4
-      role       = "recipient"
-      fqdn       = "mx.recipient.test"
-      domain     = "recipient.test"
+      role       = "mailhost"
+      fqdn       = "mx.blue.mpc"
+      domain     = "blue.mpc"
       mail_user  = "bob"
+      lab_dns    = false
+      next_hop   = ""
       elastic_ip = true
     }
+    "relay-c" = {
+      subnet     = 5
+      role       = "relay"
+      fqdn       = "relay-c.provider-c.test"
+      domain     = "provider-c.test"
+      mail_user  = ""
+      lab_dns    = false
+      next_hop   = ""
+      elastic_ip = false
+    }
+    "relay-d" = {
+      subnet     = 6
+      role       = "relay"
+      fqdn       = "relay-d.provider-d.test"
+      domain     = "provider-d.test"
+      mail_user  = ""
+      lab_dns    = false
+      next_hop   = ""
+      elastic_ip = false
+    }
   }
+
+  # The relays each mail domain publishes as _mpc1._tcp / _mpc2._tcp SRV records: the entry
+  # points of the two relay chains.
+  mpc_entry_relays = ["relay-a", "relay-b"]
 
   subnet_cidr  = { for k, h in local.hosts : k => cidrsubnet(var.vpc_cidr, 8, h.subnet) }
   private_ip   = { for k, h in local.hosts : k => cidrhost(local.subnet_cidr[k], 10) }
   vpc_resolver = cidrhost(var.vpc_cidr, 2) # AmazonProvidedDNS
   lab_dns_ip   = local.private_ip["mta-sender"]
+
+  # Mail domain => its mail server's name (also its MX).
+  mail_domains = { for k, h in local.hosts : h.domain => h.fqdn if h.role == "mailhost" }
+
+  # dnsmasq lines for the lab zone: A, MX and the MPC SRV records.
+  lab_dns_records = join("\n", concat(
+    [for d in sort(keys(local.mail_domains)) : "local=/${d}/"],
+    [for k in sort(keys(local.hosts)) : "host-record=${local.hosts[k].fqdn},${local.private_ip[k]}"],
+    [for d in sort(keys(local.mail_domains)) : "mx-host=${d},${local.mail_domains[d]},10"],
+    flatten([
+      for d in sort(keys(local.mail_domains)) : [
+        for i, r in local.mpc_entry_relays : "srv-host=_mpc${i + 1}._tcp.${d},${local.hosts[r].fqdn},25,10,0"
+      ]
+    ]),
+  ))
+
+  # systemd-resolved routing domains: these names are always looked up on the lab DNS server.
+  lab_dns_domains = join(" ", concat(["~test"], [for d in sort(keys(local.mail_domains)) : "~${d}"]))
 
   az   = sort(data.aws_ec2_instance_type_offerings.this.locations)[0]
   arch = contains(data.aws_ec2_instance_type.this.supported_architectures, "arm64") ? "arm64" : "amd64"
@@ -292,24 +347,25 @@ resource "aws_instance" "lab" {
   vpc_security_group_ids = concat(
     [aws_security_group.internal.id],
     each.value.role == "relay" ? [] : [aws_security_group.mail_client.id],
-    each.value.role == "sender" ? [aws_security_group.lab_dns.id] : [],
+    each.value.lab_dns ? [aws_security_group.lab_dns.id] : [],
     var.ssh_public_key == "" ? [] : [aws_security_group.ssh[0].id],
   )
 
   # Installs and configures this server's role on first boot (log: /var/log/cloud-init-output.log).
   user_data = templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
-    role          = each.value.role
-    fqdn          = each.value.fqdn
-    domain        = each.value.domain
-    mail_user     = each.value.mail_user
-    mail_password = each.value.mail_user == "" ? "" : local.mail_passwords[each.value.mail_user]
-    vpc_cidr      = var.vpc_cidr
-    vpc_resolver  = local.vpc_resolver
-    lab_dns_ip    = local.lab_dns_ip
-    ip_sender     = local.private_ip["mta-sender"]
-    ip_relay_a    = local.private_ip["relay-a"]
-    ip_relay_b    = local.private_ip["relay-b"]
-    ip_recipient  = local.private_ip["mx-recipient"]
+    role            = each.value.role
+    fqdn            = each.value.fqdn
+    domain          = each.value.domain
+    mail_user       = each.value.mail_user
+    mail_password   = each.value.mail_user == "" ? "" : local.mail_passwords[each.value.mail_user]
+    run_lab_dns     = each.value.lab_dns ? "yes" : "no"
+    relay_next_hop  = each.value.next_hop
+    vpc_cidr        = var.vpc_cidr
+    vpc_resolver    = local.vpc_resolver
+    lab_dns_ip      = local.lab_dns_ip
+    lab_dns_listen  = local.private_ip[each.key]
+    lab_dns_records = local.lab_dns_records
+    lab_dns_domains = local.lab_dns_domains
   })
   user_data_replace_on_change = true
 

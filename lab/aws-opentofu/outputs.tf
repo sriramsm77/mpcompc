@@ -18,7 +18,7 @@ output "servers" {
 output "outlook_sender_account" {
   description = "Outlook account (manual IMAP setup) for the sender. Password: tofu output -raw alice_password"
   value = {
-    email_address          = "alice@sender.test"
+    email_address          = "alice@${local.hosts["mta-sender"].domain}"
     user_name              = "alice"
     incoming_imap_server   = local.sender_public_ip
     incoming_imap_port     = "993 (SSL/TLS)"
@@ -31,7 +31,7 @@ output "outlook_sender_account" {
 output "outlook_recipient_account" {
   description = "Outlook account (manual IMAP setup) for the recipient. Password: tofu output -raw bob_password"
   value = {
-    email_address          = "bob@recipient.test"
+    email_address          = "bob@${local.hosts["mx-recipient"].domain}"
     user_name              = "bob"
     incoming_imap_server   = local.recipient_public_ip
     incoming_imap_port     = "993 (SSL/TLS)"
@@ -47,18 +47,37 @@ output "addin_settings_ini" {
 }
 
 output "check_srv_records" {
-  description = "Run on your laptop to confirm it can see the MPC SRV records."
-  value       = "nslookup -type=SRV _mpc1._tcp.recipient.test ${local.sender_public_ip}"
+  description = "Run on your laptop to confirm it can see the MPC SRV records for both mail domains."
+  value = join("; ", [
+    for d in sort(keys(local.mail_domains)) : "nslookup -type=SRV _mpc1._tcp.${d} ${local.sender_public_ip}"
+  ])
+}
+
+output "mpc_routes" {
+  description = "Path each chunk takes, in either direction."
+  value = {
+    for i, r in local.mpc_entry_relays : "chunk ${i + 1}" => join(" -> ", compact([
+      "sending mail server",
+      local.hosts[r].fqdn,
+      local.hosts[r].next_hop,
+      "destination mail server",
+    ]))
+  }
+}
+
+output "shell_access" {
+  description = "Open a shell on a server with Session Manager (needs the AWS CLI Session Manager plugin)."
+  value       = { for k, i in aws_instance.lab : k => "aws ssm start-session --region ${var.region} --target ${i.id}" }
 }
 
 output "alice_password" {
-  description = "Password for alice@sender.test."
+  description = "Password for alice (green.mpc)."
   value       = random_password.mail["alice"].result
   sensitive   = true
 }
 
 output "bob_password" {
-  description = "Password for bob@recipient.test."
+  description = "Password for bob (blue.mpc)."
   value       = random_password.mail["bob"].result
   sensitive   = true
 }

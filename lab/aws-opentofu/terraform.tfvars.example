@@ -3,7 +3,7 @@
 # Your laptop's public IP address, as a /32: curl https://checkip.amazonaws.com
 admin_cidr = "203.0.113.25/32"
 
-# region        = "ap-south-1"   # Mumbai (default)
+# region        = "ap-southeast-2"   # must be a region where your AWS account allows EC2
 # instance_type = "t3.micro"     # free-plan eligible; t4g.micro (ARM) also works
 # vpc_cidr      = "10.20.0.0/16"
 
