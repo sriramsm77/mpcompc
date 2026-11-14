@@ -6,8 +6,9 @@
 #             Mail its user submits (port 587) goes through the X-MPC-Via rule; mail arriving
 #             from the relays (port 25) does not, so chunks are delivered instead of looping.
 #             One mail host also runs the lab DNS server (dnsmasq).
-#   relay     Plain Postfix relay for the lab network. Forwards to the next relay when one is
-#             set, otherwise to the destination's MX. Never applies the X-MPC-Via rule.
+#   relay     Plain Postfix relay for the lab network. Mail for a domain it is an entry relay
+#             of goes to its linked partner relay (transport table); everything else goes to
+#             the destination's MX. Never applies the X-MPC-Via rule.
 set -euo pipefail
 
 ROLE='${role}'
@@ -16,7 +17,6 @@ DOMAIN='${domain}'
 MAIL_USER='${mail_user}'
 MAIL_PASSWORD='${mail_password}'
 RUN_LAB_DNS='${run_lab_dns}'
-RELAY_NEXT_HOP='${relay_next_hop}'
 VPC_CIDR='${vpc_cidr}'
 VPC_RESOLVER='${vpc_resolver}'
 LAB_DNS_IP='${lab_dns_ip}'
@@ -99,14 +99,15 @@ postconf -e \
 postconf -X header_checks || true
 
 if [ "$ROLE" = "relay" ]; then
-  postconf -e "myorigin=\$myhostname" "mydestination=localhost"
-  if [ -n "$RELAY_NEXT_HOP" ]; then
-    # Chain: hand everything to the next relay (brackets: its A record, no MX lookup).
-    postconf -e "relayhost=[$RELAY_NEXT_HOP]"
-  else
-    # Last relay in the chain: deliver to the destination's MX.
-    postconf -e "relayhost="
-  fi
+  postconf -e "myorigin=\$myhostname" "mydestination=localhost" "relayhost="
+
+  # Per-domain routing: for a domain this relay is an entry point of, hand the mail to its
+  # linked partner relay (brackets: the partner's A record, no MX lookup). Any other domain
+  # is delivered to its MX. texthash: tables need no postmap step.
+  cat > /etc/postfix/transport <<'EOF'
+${relay_transport}
+EOF
+  postconf -e "transport_maps=texthash:/etc/postfix/transport"
 else
   postconf -e \
     "myorigin=\$mydomain" \

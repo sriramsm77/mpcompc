@@ -2,37 +2,54 @@
 
 Builds the test network for the MPC Outlook add-in: one VPC with six small Ubuntu 24.04 servers
 that set themselves up on first boot. MPC works in **both directions** between `green.mpc` (alice)
-and `blue.mpc` (bob). Each chunk travels through its own **chain of two relays**.
+and `blue.mpc` (bob). Each chunk passes through **two linked relays**: relay-a with relay-c, and
+relay-b with relay-d.
 
 ```
-                         chunk 1:  relay-a ──► relay-c
-alice@green.mpc                    (provider A)  (provider C)                      bob@blue.mpc
-  mail.green.mpc  ───────►                                        ───────►  mx.blue.mpc
-  (mta-sender)    ◄───────   chunk 2:  relay-b ──► relay-d        ◄───────  (mx-recipient)
-                                   (provider B)  (provider D)
+                         chunk 1:  relay-a ◄────► relay-c
+alice@green.mpc                   (provider A)   (provider C)                      bob@blue.mpc
+  mail.green.mpc  ◄──────►                                         ◄──────►  mx.blue.mpc
+  (mta-sender)               chunk 2:  relay-b ◄────► relay-d                  (mx-recipient)
+                                  (provider B)   (provider D)
 ```
+
+Each mail domain publishes its **own** entry relays as SRV records. Chunk n of a message enters
+at the destination's n-th relay, which hands it to its linked partner, which delivers it:
+
+| SRV record | Target | Priority |
+|---|---|---|
+| `_mpc1._tcp.blue.mpc` | `relay-a.provider-a.test` | 10 |
+| `_mpc2._tcp.blue.mpc` | `relay-b.provider-b.test` | 11 |
+| `_mpc1._tcp.green.mpc` | `relay-c.provider-c.test` | 10 |
+| `_mpc2._tcp.green.mpc` | `relay-d.provider-d.test` | 11 |
+
+| Direction | Chunk 1 | Chunk 2 |
+|---|---|---|
+| alice → bob (`blue.mpc`) | relay-a → relay-c → `mx.blue.mpc` | relay-b → relay-d → `mx.blue.mpc` |
+| bob → alice (`green.mpc`) | relay-c → relay-a → `mail.green.mpc` | relay-d → relay-b → `mail.green.mpc` |
 
 | Server | Name | Address | Role |
 |---|---|---|---|
 | `mta-sender` | `mail.green.mpc` | 10.20.1.10 | green.mpc mail server (alice) + lab DNS |
 | `mx-recipient` | `mx.blue.mpc` | 10.20.4.10 | blue.mpc mail server (bob) |
-| `relay-a` | `relay-a.provider-a.test` | 10.20.2.10 | relay, forwards everything to relay-c |
-| `relay-b` | `relay-b.provider-b.test` | 10.20.3.10 | relay, forwards everything to relay-d |
-| `relay-c` | `relay-c.provider-c.test` | 10.20.5.10 | relay, delivers to the destination's mail server |
-| `relay-d` | `relay-d.provider-d.test` | 10.20.6.10 | relay, delivers to the destination's mail server |
+| `relay-a` | `relay-a.provider-a.test` | 10.20.2.10 | entry relay for blue.mpc; linked to relay-c |
+| `relay-b` | `relay-b.provider-b.test` | 10.20.3.10 | entry relay for blue.mpc; linked to relay-d |
+| `relay-c` | `relay-c.provider-c.test` | 10.20.5.10 | entry relay for green.mpc; linked to relay-a |
+| `relay-d` | `relay-d.provider-d.test` | 10.20.6.10 | entry relay for green.mpc; linked to relay-b |
 
 How the pieces fit:
 
-- **Lab DNS** (dnsmasq on `mta-sender`): both domains publish `_mpc1._tcp` → relay-a and
-  `_mpc2._tcp` → relay-b. These are the entry points of the two relay chains.
+- **Lab DNS** (dnsmasq on `mta-sender`): A, MX and the SRV records above. To change which relays
+  a domain uses, edit `mpc_srv` in `main.tf`; to change which relays are linked, edit
+  `relay_links`.
 - **Mail servers** (Postfix + Dovecot): both apply your X-MPC-Via rule from
   `postfix-3.6.4/etc/postfix/header_checks` to mail their user **submits** from Outlook (port 587).
   This uses a separate Postfix cleanup service, `mpccleanup`, which only the submission service
   uses. Chunks **arriving** from the relays on port 25 skip the rule and are delivered to the
   mailbox. If they didn't, they would be sent straight back out in a loop.
-- **Relays** (Postfix only): relay-a and relay-b hand everything to relay-c and relay-d
-  (`relayhost`). relay-c and relay-d deliver to the destination domain's MX. No relay applies the
-  X-MPC-Via rule.
+- **Relays** (Postfix only): each has a transport table (`/etc/postfix/transport`) that sends mail
+  for the domains it's an entry relay of to its linked partner. Mail for any other domain goes to
+  that domain's MX. No relay applies the X-MPC-Via rule.
 
 Your laptop can reach only ports 587, 993 and 53 on the two mail servers, and only from
 `admin_cidr`. Mail between the servers stays on private addresses inside the VPC.
@@ -102,15 +119,16 @@ by relay-a.provider-a.test from mail.green.mpc [10.20.1.10]
 by mail.green.mpc          from your laptop (ESMTPSA = alice logged in)
 ```
 
-Chunk 2 shows relay-b and relay-d instead. On any server (EC2 console → instance → **Connect →
-Session Manager**), run `sudo -i`, then `grep -E 'relay=|status=' /var/log/mail.log | tail`.
+From bob to alice, chunk 1 shows relay-c first, then relay-a. `tofu output mpc_routes` lists all
+four routes. On any server (EC2 console → instance → **Connect → Session Manager**), run
+`sudo -i`, then `grep -E 'relay=|status=' /var/log/mail.log | tail`.
 
-| Server | Expect |
-|---|---|
-| `mta-sender` (alice → bob) | `relay=relay-a.provider-a.test[10.20.2.10]` and `relay=relay-b.provider-b.test[10.20.3.10]` |
-| `relay-a` / `relay-b` | `relay=relay-c.provider-c.test[10.20.5.10]` / `relay=relay-d.provider-d.test[10.20.6.10]` |
-| `relay-c` / `relay-d` | `relay=mx.blue.mpc[10.20.4.10]` (or `mail.green.mpc[10.20.1.10]` for bob → alice) |
-| `mx-recipient` | `to=<bob@blue.mpc>, relay=local ... delivered to maildir` |
+| Server | alice → bob | bob → alice |
+|---|---|---|
+| `mta-sender` / `mx-recipient` (sending side) | `relay=relay-a…[10.20.2.10]` and `relay=relay-b…[10.20.3.10]` | `relay=relay-c…[10.20.5.10]` and `relay=relay-d…[10.20.6.10]` |
+| entry relay | relay-a → `relay=relay-c…`, relay-b → `relay=relay-d…` | relay-c → `relay=relay-a…`, relay-d → `relay=relay-b…` |
+| partner relay | relay-c / relay-d → `relay=mx.blue.mpc[10.20.4.10]` | relay-a / relay-b → `relay=mail.green.mpc[10.20.1.10]` |
+| receiving mail server | `to=<bob@blue.mpc>, relay=local … delivered to maildir` | `to=<alice@green.mpc>, relay=local …` |
 
 ## Troubleshooting
 

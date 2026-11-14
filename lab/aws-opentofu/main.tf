@@ -2,15 +2,20 @@
 #
 #   mta-sender    mail.green.mpc           green.mpc mail server (alice) + lab DNS (dnsmasq)
 #   mx-recipient  mx.blue.mpc              blue.mpc mail server (bob)
-#   relay-a       relay-a.provider-a.test  relay, forwards everything to relay-c
-#   relay-b       relay-b.provider-b.test  relay, forwards everything to relay-d
-#   relay-c       relay-c.provider-c.test  relay, delivers to the destination's MX
-#   relay-d       relay-d.provider-d.test  relay, delivers to the destination's MX
+#   relay-a .. d  relay-X.provider-X.test  relays; a <-> c and b <-> d are linked
 #
-# MPC works in both directions. Both mail servers apply the X-MPC-Via rule to mail their users
-# submit (port 587), so chunk 1 travels relay-a -> relay-c and chunk 2 relay-b -> relay-d.
+# Each mail domain publishes its own two entry relays as _mpc1/_mpc2._tcp SRV records:
+#
+#   blue.mpc   _mpc1 -> relay-a (priority 10)   _mpc2 -> relay-b (priority 11)
+#   green.mpc  _mpc1 -> relay-c (priority 10)   _mpc2 -> relay-d (priority 11)
+#
+# An entry relay hands mail for its domain to its linked partner, which delivers it:
+#
+#   alice -> bob    chunk 1: relay-a -> relay-c -> mx.blue.mpc     chunk 2: relay-b -> relay-d
+#   bob -> alice    chunk 1: relay-c -> relay-a -> mail.green.mpc  chunk 2: relay-d -> relay-b
+#
+# Both mail servers apply the X-MPC-Via rule to mail their users submit (port 587).
 # Mail between the servers stays on private addresses inside the VPC.
-#
 # green.mpc and blue.mpc exist only in the lab DNS; the servers never ask the internet about them.
 
 locals {
@@ -22,7 +27,6 @@ locals {
       domain     = "green.mpc"
       mail_user  = "alice"
       lab_dns    = true
-      next_hop   = ""
       elastic_ip = true
     }
     "relay-a" = {
@@ -32,7 +36,6 @@ locals {
       domain     = "provider-a.test"
       mail_user  = ""
       lab_dns    = false
-      next_hop   = "relay-c.provider-c.test"
       elastic_ip = false
     }
     "relay-b" = {
@@ -42,7 +45,6 @@ locals {
       domain     = "provider-b.test"
       mail_user  = ""
       lab_dns    = false
-      next_hop   = "relay-d.provider-d.test"
       elastic_ip = false
     }
     "mx-recipient" = {
@@ -52,7 +54,6 @@ locals {
       domain     = "blue.mpc"
       mail_user  = "bob"
       lab_dns    = false
-      next_hop   = ""
       elastic_ip = true
     }
     "relay-c" = {
@@ -62,7 +63,6 @@ locals {
       domain     = "provider-c.test"
       mail_user  = ""
       lab_dns    = false
-      next_hop   = ""
       elastic_ip = false
     }
     "relay-d" = {
@@ -72,14 +72,33 @@ locals {
       domain     = "provider-d.test"
       mail_user  = ""
       lab_dns    = false
-      next_hop   = ""
       elastic_ip = false
     }
   }
 
-  # The relays each mail domain publishes as _mpc1._tcp / _mpc2._tcp SRV records: the entry
-  # points of the two relay chains.
-  mpc_entry_relays = ["relay-a", "relay-b"]
+  # The relays each mail domain publishes as _mpc1._tcp, _mpc2._tcp, ... SRV records (in that
+  # order, with priorities 10, 11, ...). Chunk n of a message to that domain enters at relay n.
+  mpc_srv = {
+    "blue.mpc"  = ["relay-a", "relay-b"]
+    "green.mpc" = ["relay-c", "relay-d"]
+  }
+
+  # Linked relays. An entry relay hands mail for its domain to its partner, which delivers it
+  # to the domain's mail server; so each chunk passes through both relays of one link.
+  relay_links = [["relay-a", "relay-c"], ["relay-b", "relay-d"]]
+  relay_partner = merge(
+    { for l in local.relay_links : l[0] => l[1] },
+    { for l in local.relay_links : l[1] => l[0] },
+  )
+
+  # Postfix transport table for each relay: "<domain> smtp:[partner]" for the domains it is an
+  # entry relay of. Mail for any other domain is delivered normally (MX lookup).
+  relay_transport = {
+    for k, h in local.hosts : k => join("\n", [
+      for d in sort(keys(local.mpc_srv)) : "${d} smtp:[${local.hosts[local.relay_partner[k]].fqdn}]"
+      if contains(local.mpc_srv[d], k) && contains(keys(local.relay_partner), k)
+    ]) if h.role == "relay"
+  }
 
   subnet_cidr  = { for k, h in local.hosts : k => cidrsubnet(var.vpc_cidr, 8, h.subnet) }
   private_ip   = { for k, h in local.hosts : k => cidrhost(local.subnet_cidr[k], 10) }
@@ -95,8 +114,8 @@ locals {
     [for k in sort(keys(local.hosts)) : "host-record=${local.hosts[k].fqdn},${local.private_ip[k]}"],
     [for d in sort(keys(local.mail_domains)) : "mx-host=${d},${local.mail_domains[d]},10"],
     flatten([
-      for d in sort(keys(local.mail_domains)) : [
-        for i, r in local.mpc_entry_relays : "srv-host=_mpc${i + 1}._tcp.${d},${local.hosts[r].fqdn},25,10,0"
+      for d in sort(keys(local.mpc_srv)) : [
+        for i, r in local.mpc_srv[d] : "srv-host=_mpc${i + 1}._tcp.${d},${local.hosts[r].fqdn},25,${10 + i},0"
       ]
     ]),
   ))
@@ -359,7 +378,7 @@ resource "aws_instance" "lab" {
     mail_user       = each.value.mail_user
     mail_password   = each.value.mail_user == "" ? "" : local.mail_passwords[each.value.mail_user]
     run_lab_dns     = each.value.lab_dns ? "yes" : "no"
-    relay_next_hop  = each.value.next_hop
+    relay_transport = lookup(local.relay_transport, each.key, "")
     vpc_cidr        = var.vpc_cidr
     vpc_resolver    = local.vpc_resolver
     lab_dns_ip      = local.lab_dns_ip

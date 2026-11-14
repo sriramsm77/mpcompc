@@ -54,20 +54,17 @@ output "check_srv_records" {
 }
 
 output "mpc_routes" {
-  description = "Path each chunk takes, in either direction."
+  description = "Path each chunk takes to each mail domain."
   value = {
-    for i, r in local.mpc_entry_relays : "chunk ${i + 1}" => join(" -> ", compact([
-      "sending mail server",
-      local.hosts[r].fqdn,
-      local.hosts[r].next_hop,
-      "destination mail server",
-    ]))
+    for pair in flatten([
+      for d in sort(keys(local.mpc_srv)) : [
+        for i, r in local.mpc_srv[d] : {
+          key   = "to ${d}, chunk ${i + 1}"
+          route = "${local.hosts[r].fqdn} -> ${local.hosts[local.relay_partner[r]].fqdn} -> ${local.mail_domains[d]}"
+        }
+      ]
+    ]) : pair.key => pair.route
   }
-}
-
-output "shell_access" {
-  description = "Open a shell on a server with Session Manager (needs the AWS CLI Session Manager plugin)."
-  value       = { for k, i in aws_instance.lab : k => "aws ssm start-session --region ${var.region} --target ${i.id}" }
 }
 
 output "alice_password" {
