@@ -150,6 +150,9 @@
     <Compile Include="..\Mpc.Core\SharedMessage.cs">
       <Link>Core\SharedMessage.cs</Link>
     </Compile>
+    <Compile Include="..\Mpc.Core\SenderChecks.cs">
+      <Link>Core\SenderChecks.cs</Link>
+    </Compile>
     <Compile Include="..\Mpc.Core\SharePayload.cs">
       <Link>Core\SharePayload.cs</Link>
     </Compile>

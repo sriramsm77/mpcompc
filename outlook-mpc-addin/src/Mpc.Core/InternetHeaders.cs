@@ -56,6 +56,17 @@ namespace Mpc.Core
             return null;
         }
 
+        /// <summary>Values of every field called <paramref name="name"/> (any case), in order.</summary>
+        public static IReadOnlyList<string> GetAll(string raw, string name)
+        {
+            var values = new List<string>();
+            foreach (KeyValuePair<string, string> field in Parse(raw))
+            {
+                if (string.Equals(field.Key, name, StringComparison.OrdinalIgnoreCase)) values.Add(field.Value);
+            }
+            return values;
+        }
+
         /// <summary>
         /// Replaces the first field called <paramref name="name"/> (and its folded lines) with
         /// "name: value", or adds it at the end of the header block if it is missing, like

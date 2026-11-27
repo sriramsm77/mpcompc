@@ -30,6 +30,12 @@ namespace Mpc.Core
         public const string HeaderScheme = "X-MPC-Scheme";
 
         /// <summary>
+        /// Authentication-Results (RFC 8601): the SPF, DKIM and DMARC results a receiving server
+        /// recorded. The add-in trusts only those from the relay named in a chunk's X-MPC-Via.
+        /// </summary>
+        public const string HeaderAuthenticationResults = "Authentication-Results";
+
+        /// <summary>
         /// X-MPC-Scheme value for additive secret sharing over Z_p, p = 2^61 - 1: each message
         /// carries one share of the body and of every attachment as .bin files.
         /// </summary>

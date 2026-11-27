@@ -15,6 +15,12 @@
 #   bob -> alice    chunk 1: relay-c -> relay-a -> mail.green.mpc  chunk 2: relay-d -> relay-b
 #
 # Both mail servers apply the X-MPC-Via rule to mail their users submit (port 587).
+#
+# Sender checks (stage 1 of malware detection): each mail domain publishes SPF, DKIM and DMARC
+# records; its mail server DKIM-signs what its users submit; each chunk is checked (blocklist,
+# SPF, DKIM, DMARC) where it enters the recipient's MPC relays, which record the results in
+# Authentication-Results; the recipient's mail server keeps only its own relays' results; the
+# Outlook add-in rejoins a message only when every chunk passed.
 # Mail between the servers stays on private addresses inside the VPC.
 # All lab names (green.mpc, blue.mpc, provider-a.test .. provider-d.test) exist only in the lab DNS; the servers
 # never ask the internet about them.
@@ -92,12 +98,17 @@ locals {
     { for l in local.relay_links : l[1] => l[0] },
   )
 
-  # Postfix transport table for each relay: "<domain> smtp:[partner]" for the domains it is an
-  # entry relay of. Mail for any other domain is delivered normally (MX lookup).
+  # Postfix transport table for each relay: "<domain> smtp:[partner]:2525" for the domains it is
+  # an entry relay of, and "<domain> smtp:[mail server]:2525" for the other lab domains. Port 2525
+  # (relays only) is how the relays reach each other and the mail servers, keeping the entry
+  # relay's Authentication-Results; port 25 removes them. Other domains: MX lookup as usual.
   relay_transport = {
     for k, h in local.hosts : k => join("\n", [
-      for d in sort(keys(local.mpc_srv)) : "${d} smtp:[${local.hosts[local.relay_partner[k]].fqdn}]"
-      if contains(local.mpc_srv[d], k) && contains(keys(local.relay_partner), k)
+      for d in sort(keys(local.mail_domains)) : (
+        contains(lookup(local.mpc_srv, d, []), k) && contains(keys(local.relay_partner), k)
+        ? "${d} smtp:[${local.hosts[local.relay_partner[k]].fqdn}]:2525"
+        : "${d} smtp:[${local.mail_domains[d]}]:2525"
+      )
     ]) if h.role == "relay"
   }
 
@@ -131,6 +142,11 @@ locals {
         for i, r in lookup(local.mpc_srv, local.hosts[k].domain, []) :
         "srv-host=_mpc${i + 1}._tcp.${local.hosts[k].domain},${local.hosts[r].fqdn},25,${10 + i},0"
       ],
+      ["", "# Sender checks: SPF, DKIM key and DMARC policy for ${local.hosts[k].domain}"],
+      ["txt-record=${local.hosts[k].domain},\"v=spf1 ip4:${local.private_ip[k]} -all\""],
+      # A TXT string holds at most 255 characters, so the DKIM key is split into several.
+      ["txt-record=${local.dkim_selector}._domainkey.${local.hosts[k].domain},${join(",", [for part in regexall(".{1,250}", local.dkim_txt[local.hosts[k].domain]) : "\"${part}\""])}"],
+      ["txt-record=_dmarc.${local.hosts[k].domain},\"${local.dmarc_record}\""],
       ["", "# Relay names (every DNS server carries these)"],
       [for d in local.relay_domains : "local=/${d}/"],
       [for h in sort(keys(local.hosts)) : "host-record=${local.hosts[h].fqdn},${local.private_ip[h]}" if local.hosts[h].role == "relay"],
@@ -140,6 +156,25 @@ locals {
         if local.hosts[o].domain != local.hosts[k].domain
       ],
     ))
+  }
+
+  # Sender checks (stage 1). Each mail domain signs with its own DKIM key under this selector.
+  dkim_selector = "mpc"
+  dkim_txt = {
+    for d in keys(local.mail_domains) : d => "v=DKIM1; k=rsa; p=${replace(replace(replace(trimspace(tls_private_key.dkim[d].public_key_pem), "-----BEGIN PUBLIC KEY-----", ""), "-----END PUBLIC KEY-----", ""), "\n", "")}"
+  }
+  # Reject mail whose From: domain passed neither SPF nor DKIM for that domain; DKIM must be
+  # signed by exactly that domain, SPF may be a subdomain.
+  dmarc_record = "v=DMARC1; p=reject; adkim=s; aspf=r"
+
+  # The relays' private addresses: a chunk arriving from one of them is on its second hop, so
+  # the next relay doesn't check SPF (the address isn't the sender's).
+  relay_addresses = join(",", [for k in sort(keys(local.hosts)) : "${local.private_ip[k]}/32" if local.hosts[k].role == "relay"])
+
+  # For each mail domain, its MPC relays' names as a regular expression: the only
+  # Authentication-Results its mail server keeps on incoming mail.
+  provider_ids_regex = {
+    for d in keys(local.mpc_srv) : d => join("|", [for r in local.mpc_srv[d] : replace(local.hosts[r].fqdn, ".", "\\.")])
   }
 
   az   = sort(data.aws_ec2_instance_type_offerings.this.locations)[0]
@@ -182,6 +217,14 @@ data "aws_ami" "ubuntu" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
+}
+
+# One DKIM key pair per mail domain. The private key goes only to that domain's mail server; the
+# public key is published in its DNS (mpc._domainkey.<domain>).
+resource "tls_private_key" "dkim" {
+  for_each  = local.mail_domains
+  algorithm = "RSA"
+  rsa_bits  = 2048
 }
 
 resource "random_password" "mail" {
@@ -391,7 +434,10 @@ resource "aws_instance" "lab" {
   )
 
   # Installs and configures this server's role on first boot (log: /var/log/cloud-init-output.log).
-  user_data = templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
+  # Compressed: EC2 allows 16 KB of user data, and the script plus a DKIM key is more than that.
+  # cloud-init unpacks it. (To read it: aws ec2 describe-instance-attribute ... --attribute
+  # userData, then base64-decode and gunzip.)
+  user_data_base64 = base64gzip(templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
     role            = each.value.role
     fqdn            = each.value.fqdn
     domain          = each.value.domain
@@ -405,7 +451,15 @@ resource "aws_instance" "lab" {
     lab_dns_listen  = local.private_ip[each.key]
     lab_dns_records = lookup(local.lab_dns_records, each.key, "")
     lab_dns_domains = local.lab_dns_domains
-  })
+
+    # Sender checks (stage 1)
+    dkim_selector      = local.dkim_selector
+    dkim_private_key   = each.value.role == "mailhost" ? trimspace(tls_private_key.dkim[each.value.domain].private_key_pem_pkcs8) : ""
+    domain_regex       = replace(each.value.domain, ".", "\\.")
+    provider_ids_regex = lookup(local.provider_ids_regex, each.value.domain, "")
+    relay_addresses    = local.relay_addresses
+    blocked_cidrs      = var.blocked_cidrs
+  }))
   user_data_replace_on_change = true
 
   root_block_device {

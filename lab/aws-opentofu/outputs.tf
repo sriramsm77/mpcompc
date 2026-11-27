@@ -56,6 +56,16 @@ output "check_srv_records" {
   ]))
 }
 
+output "check_sender_records" {
+  description = "Run on your laptop: asks each mail domain's own DNS server for its SPF, DKIM and DMARC records."
+  value = join("; ", flatten([
+    for k in local.lab_dns_hosts : [
+      for n in [local.hosts[k].domain, "${local.dkim_selector}._domainkey.${local.hosts[k].domain}", "_dmarc.${local.hosts[k].domain}"] :
+      "nslookup -type=TXT ${n} ${aws_eip.lab[k].public_ip}"
+    ]
+  ]))
+}
+
 output "mpc_routes" {
   description = "Path each chunk takes to each mail domain."
   value = {

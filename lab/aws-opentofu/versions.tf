@@ -11,6 +11,10 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.5"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0" # private_key_pem_pkcs8 (the DKIM keys)
+    }
   }
 }
 

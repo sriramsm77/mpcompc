@@ -149,8 +149,10 @@ Notes:
 - **Split on Send** (on by default): when the first To recipient's domain publishes MPC SRV records,
   every message to it is secret-shared automatically. If the domain has no records, the message goes
   out unchanged, as with `mail`.
-- **Rejoin New Mail** (on by default): checks the Inbox at startup and a few seconds after new mail
-  arrives. `mail` does this when it opens the mailbox.
+- **Rejoin New Mail** (on by default): checks the Inbox of **every account** in the profile at
+  startup and a few seconds after new mail arrives in any of them (each Inbox is watched, since
+  Outlook's new-mail event isn't raised reliably for IMAP accounts). `mail` does this when it
+  opens the mailbox. Accounts added while Outlook is running are watched after a restart.
 - **MPC Settings**: opens the settings file.
 
 **New message window: Message tab → Send via MPC**: secret-shares and sends this message even when
@@ -185,6 +187,33 @@ are then moved to **Deleted Items** (you can turn this off in the settings).
 Chunks from mailutils (no `X-MPC-Scheme` header) are rejoined as before: the body slices are joined
 in order and the attachments copied from the other chunks.
 
+**Sender checks (stage 1 of malware detection).** Before rejoining, the add-in checks that every
+chunk passed SPF, DKIM and DMARC at the MPC relay it entered through: the relay named in its
+`X-MPC-Via`, which records its results in `Authentication-Results` headers named after itself (see
+the lab's [Sender checks](../lab/aws-opentofu/README.md#sender-checks-stage-1)). For every chunk,
+the results from that relay must say `spf=pass`, `dkim=pass` for the From: domain and
+`dmarc=pass`, with no other SPF, DKIM or DMARC result (a `pass` next to a `fail` fails); its
+From: address must be its envelope sender (`Return-Path`), since the sender's server ties the
+envelope sender to the logged-in user but signs whatever From: they write; and all chunks must
+have the same From: address. Results from any other server are ignored, and a chunk
+without results from its relay fails. A message that fails is not rejoined: its chunks get the
+category **"MPC: failed sender checks"** and are moved to the account's **Junk Email** folder (kept,
+not deleted, like a mail server's quarantine; if the account has no Junk folder they stay where
+they are), and **Rejoin MPC Chunks** lists it once under "failed the sender checks" with the reason
+(the full list is in the log). Chunks with that category are skipped from then on, so the same
+message isn't reported on every rejoin. To check a message again (for example after turning
+`RequireSenderChecks` off), move its chunks back to the Inbox and remove the category. Outlook may
+re-save a moved IMAP message without some of its original headers, so the reason is best read from
+the report or the log.
+
+Every copy of a chunk is checked, since two emails can carry the same X-MPC-ID and chunk number (a
+genuine chunk resent from another server, or a forged one). If one copy passes, it is used, so a
+forged copy can't stop the message. A duplicate that fails, or comes from a different From:
+address, is **not** deleted with the rest: it is moved to Junk Email with the category
+"MPC: failed sender checks", and the report lists it with the reason. Identical duplicates that
+pass are removed with the other chunks, as before. Turn this off with `RequireSenderChecks=false`, for mail servers
+that don't add these results (and remove the category from chunks that already failed).
+
 ### Settings
 
 `%APPDATA%\MpcOutlookAddIn\settings.ini` (restart Outlook after editing it):
@@ -198,6 +227,8 @@ RejoinLookbackDays=30
 # Comma-separated DNS servers for the SRV lookups; empty uses this computer's DNS
 DnsServers=
 DnsTimeoutMs=2000
+# Rejoin only messages whose chunks all passed the sender checks (SPF, DKIM, DMARC at their MPC relay)
+RequireSenderChecks=true
 ```
 
 The log is at `%LOCALAPPDATA%\MpcOutlookAddIn\mpc.log`.
@@ -298,13 +329,18 @@ These are deliberate. Most avoid failure cases in the current C code:
 
 ## Testing status
 
-- `tests/Mpc.Core.Tests`: 43 tests covering header formats, chunk sizes against the C formula,
+- `tests/Mpc.Core.Tests`: 67 tests covering header formats, chunk sizes against the C formula,
   UTF-8 boundaries, header parsing and rewriting, grouping (out of order, incomplete, duplicates),
   SRV lookups against an in-process DNS server over UDP and TCP (including NXDOMAIN, SERVFAIL and
   timeouts), and secret sharing: field arithmetic, packing, sharing and reconstruction for 1 to 5
   servers, redrawing random values equal to p, the share-file format and its validation, rejecting
   shares that don't belong together, safe file names, and a full send-to-combine round trip with
-  attachments.
+  attachments; and the sender checks: parsing `Authentication-Results` (using the exact headers
+  OpenDKIM and OpenDMARC add in the lab's configuration), and passing or failing a message
+  (forged chunk, a forged pass next to the relay's real fail, a replayed chunk, results from the
+  wrong relay, SPF without DKIM, a DKIM signature or DMARC result for another domain, different
+  senders, missing results, a From: that isn't the envelope sender), and duplicates of a chunk (a replayed copy is kept and reported, a
+  passing copy is used even when a forged one comes first, identical copies are extras).
 - The add-in code compiles against the .NET Framework 4.8 reference assemblies at C# 7.3.
 
 It **has not yet been run inside Outlook**. On first use, check these:
@@ -318,3 +354,6 @@ It **has not yet been run inside Outlook**. On first use, check these:
 4. Rejoining a two-chunk message from `mail` gives exactly the original text, with no extra line
    break where the chunks meet.
 5. The rebuilt message appears in the same folder, with the original sender and date.
+6. With the lab's sender checks: every chunk shows three `Authentication-Results` lines from its
+   entry relay, and the message is rejoined; with `RequireSenderChecks=false` on a lab built
+   before them, messages still rejoin.

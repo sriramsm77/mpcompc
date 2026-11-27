@@ -25,5 +25,27 @@ namespace Mpc.Core
             string domain = s.Substring(at + 1).Trim().TrimEnd('.', '>').Trim();
             return domain.Length == 0 ? null : domain.ToLowerInvariant();
         }
+
+        /// <summary>
+        /// Returns the lower-cased address of "user@example.com" or "Some Name &lt;user@example.com&gt;",
+        /// or null when there is no "@" with something on both sides.
+        /// </summary>
+        public static string GetAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address)) return null;
+
+            string s = address.Trim();
+            int lt = s.LastIndexOf('<');
+            int gt = s.LastIndexOf('>');
+            if (lt >= 0 && gt > lt)
+            {
+                s = s.Substring(lt + 1, gt - lt - 1);
+            }
+
+            s = s.Trim();
+            int at = s.LastIndexOf('@');
+            if (at <= 0 || at == s.Length - 1 || s.IndexOf(' ') >= 0) return null;
+            return s.ToLowerInvariant();
+        }
     }
 }

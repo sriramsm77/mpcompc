@@ -44,3 +44,17 @@ variable "name_prefix" {
   type        = string
   default     = "mpc-lab"
 }
+
+variable "blocked_cidrs" {
+  description = <<-EOT
+    Sender checks: addresses the relays refuse outright (connection-level reputation), e.g.
+    ["10.20.4.10/32"] to refuse chunks from mail.blue.mpc while testing. Empty by default.
+  EOT
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for c in var.blocked_cidrs : can(cidrhost(c, 0))])
+    error_message = "Each entry in blocked_cidrs must be a CIDR block such as \"10.20.4.10/32\"."
+  }
+}

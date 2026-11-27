@@ -12,6 +12,16 @@ namespace MpcOutlookAddIn
     {
         private System.Windows.Forms.Timer _rejoinTimer;
 
+        /// <summary>
+        /// The Items collection of every account's Inbox, watched for new mail. Outlook's NewMailEx
+        /// event isn't raised reliably for IMAP accounts (such as the lab's alice and bob), so each
+        /// Inbox is watched as well. The references are kept so the events stay connected.
+        /// </summary>
+        private readonly List<Outlook.Items> _watchedInboxes = new List<Outlook.Items>();
+
+        /// <summary>Stores already logged as having no Inbox, so the log isn't repeated each pass.</summary>
+        private readonly HashSet<string> _storesWithoutInbox = new HashSet<string>();
+
         private MpcSettings _settings;
 
         /// <summary>
@@ -71,7 +81,9 @@ namespace MpcOutlookAddIn
             AddInLog.Write("MPC add-in started. Split on send: " + Settings.AutoSplitOnSend +
                            ", rejoin new mail: " + Settings.AutoRejoinNewMail + ".");
 
-            // mail.c rejoins chunks when the mailbox is opened; do the same for the Inbox.
+            WatchInboxes();
+
+            // mail.c rejoins chunks when the mailbox is opened; do the same for the Inboxes.
             if (Settings.AutoRejoinNewMail) ScheduleInboxRejoin();
         }
 
@@ -143,26 +155,87 @@ namespace MpcOutlookAddIn
             if (Settings.AutoRejoinNewMail) ScheduleInboxRejoin();
         }
 
+        private void Inbox_ItemAdd(object item)
+        {
+            if (Settings.AutoRejoinNewMail) ScheduleInboxRejoin();
+        }
+
+        /// <summary>Connects <see cref="Inbox_ItemAdd"/> to the Inbox of every account open at startup.</summary>
+        private void WatchInboxes()
+        {
+            ForEachInbox((inbox, storeName) =>
+            {
+                Outlook.Items items = inbox.Items;
+                items.ItemAdd += new Outlook.ItemsEvents_ItemAddEventHandler(Inbox_ItemAdd);
+                _watchedInboxes.Add(items);
+                AddInLog.Write("Watching the Inbox of " + storeName + " for new mail.");
+            });
+        }
+
+        /// <summary>
+        /// Rejoins the Inbox of every account in the profile, not just the default one: with
+        /// alice's and bob's accounts in one profile, only the first one's Inbox is the default.
+        /// </summary>
         private void RejoinTimer_Tick(object sender, EventArgs e)
         {
             _rejoinTimer.Stop();
             if (!Settings.AutoRejoinNewMail) return;
 
+            ForEachInbox((inbox, storeName) => Receiver.RejoinFolder(inbox));
+        }
+
+        /// <summary>
+        /// Runs <paramref name="action"/> on the Inbox of each store (account) in the profile. A
+        /// store without an Inbox (a PST archive, say) is skipped; an error in one store doesn't stop
+        /// the others.
+        /// </summary>
+        private void ForEachInbox(Action<Outlook.MAPIFolder, string> action)
+        {
             Outlook.NameSpace session = null;
-            Outlook.MAPIFolder inbox = null;
+            Outlook.Stores stores = null;
             try
             {
                 session = Application.Session;
-                inbox = session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderInbox);
-                Receiver.RejoinFolder(inbox);
+                stores = session.Stores;
+                for (int i = 1; i <= stores.Count; i++)
+                {
+                    Outlook.Store store = null;
+                    Outlook.MAPIFolder inbox = null;
+                    string storeName = "store " + i;
+                    try
+                    {
+                        store = stores[i];
+                        storeName = store.DisplayName;
+                        try
+                        {
+                            inbox = store.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderInbox);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (_storesWithoutInbox.Add(storeName)) AddInLog.Write("Skipping " + storeName + ": it has no Inbox", ex);
+                            continue;
+                        }
+
+                        action(inbox, storeName);
+                    }
+                    catch (Exception ex)
+                    {
+                        AddInLog.Write("Automatic rejoin: the Inbox of " + storeName + " failed", ex);
+                    }
+                    finally
+                    {
+                        OutlookMpc.Release(inbox);
+                        OutlookMpc.Release(store);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                AddInLog.Write("Automatic rejoin of the Inbox failed", ex);
+                AddInLog.Write("Automatic rejoin: could not list the accounts", ex);
             }
             finally
             {
-                OutlookMpc.Release(inbox);
+                OutlookMpc.Release(stores);
                 OutlookMpc.Release(session);
             }
         }

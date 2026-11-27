@@ -17,6 +17,7 @@ namespace Mpc.Core
             RejoinLookbackDays = 30;
             DnsServers = string.Empty;
             DnsTimeoutMs = 2000;
+            RequireSenderChecks = true;
         }
 
         /// <summary>Split every outgoing message whose recipient domain publishes _mpcN SRV records.</summary>
@@ -35,6 +36,13 @@ namespace Mpc.Core
         public string DnsServers { get; set; }
 
         public int DnsTimeoutMs { get; set; }
+
+        /// <summary>
+        /// Rejoin a message only when every chunk passed the sender checks (stage 1: SPF, DKIM and
+        /// DMARC, recorded by the relay named in its X-MPC-Via). Turn off for mail servers that
+        /// don't record Authentication-Results, such as a lab built before stage 1.
+        /// </summary>
+        public bool RequireSenderChecks { get; set; }
 
         public static MpcSettings Load(string path)
         {
@@ -70,6 +78,8 @@ namespace Mpc.Core
                 "# Comma-separated DNS servers for _mpcN._tcp SRV lookups; empty uses this computer's DNS",
                 "DnsServers=" + (DnsServers ?? string.Empty).Replace("\r", " ").Replace("\n", " "),
                 "DnsTimeoutMs=" + DnsTimeoutMs.ToString(CultureInfo.InvariantCulture),
+                "# Rejoin only messages whose chunks all passed the sender checks (SPF, DKIM, DMARC at their MPC relay)",
+                "RequireSenderChecks=" + Format(RequireSenderChecks),
             };
             File.WriteAllLines(path, lines.ToArray(), new UTF8Encoding(false));
         }
@@ -95,6 +105,9 @@ namespace Mpc.Core
                     break;
                 case "dnstimeoutms":
                     DnsTimeoutMs = Math.Max(100, ParseInt(value, DnsTimeoutMs));
+                    break;
+                case "requiresenderchecks":
+                    RequireSenderChecks = ParseBool(value, RequireSenderChecks);
                     break;
             }
         }
